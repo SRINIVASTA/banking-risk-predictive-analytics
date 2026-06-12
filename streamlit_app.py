@@ -196,16 +196,14 @@ with st.expander("🔮 Open Interactive Real-Time Customer Churn Risk Simulator"
     with sim_col2:
         rec_input = st.slider("Days Since Last Transaction (Recency)", 0, 180, 14)
         tx_input = st.slider("Monthly Transaction Counts", 0, 100, 22)
-with sim_col3:
-loan_input = st.selectbox("Active Account Debt Liability Status", ["No Active Loan", "Has Active Bank Loan"])
-loan_numeric = 1 if loan_input == "Has Active Bank Loan" else 0
-
-churn_prob = (rec_input / 180) * 0.75 + (1 - (score_input / 850)) * 0.25 - (loan_numeric * 0.15)
-churn_prob = max(0.0, min(1.0, churn_prob))
-
-if churn_prob > 0.55:
-    st.error(f"🔴 CRITICAL ALERT: HIGH RISK OF CUSTOMER CHURN ({churn_prob * 100:.1f}%) — Dispatch immediate retention vouchers.")
-else:
-    st.success(f"🟢 HEALTHY ACCOUNT FRAME: ACTIVE PROFILE ({churn_prob * 100:.1f}%) — Standard background monitoring metrics hold safe.")
-
     with sim_col3:
+        loan_input = st.selectbox("Active Account Debt Liability Status", ["No Active Loan", "Has Active Bank Loan"])
+        loan_numeric = 1 if loan_input == "Has Active Bank Loan" else 0
+        
+    churn_prob = (rec_input / 180) * 0.75 + (1 - (score_input / 850)) * 0.25 - (loan_numeric * 0.15)
+    churn_prob = max(0.0, min(1.0, churn_prob))
+    
+    if churn_prob > 0.55:
+        st.error(f"🔴 CRITICAL ALERT: HIGH RISK OF CUSTOMER CHURN ({churn_prob * 100:.1f}%) — Dispatch immediate retention vouchers.")
+    else:
+        st.success(f"🟢 HEALTHY ACCOUNT FRAME: ACTIVE PROFILE ({churn_prob * 100:.1f}%) — Standard background monitoring metrics hold safe.")
