@@ -15,7 +15,7 @@ st.set_page_config(
     layout="wide"  
 )
 
-# Native theme spacing corrections pulling the entire container structure upward
+# Force-inject ultra-tight padding overrides to reclaim every single pixel row
 st.markdown("""
     <style>
         .block-container {padding-top: 0rem !important; padding-bottom: 0rem !important;}
@@ -32,6 +32,7 @@ st.title("🚀 CareerDream.in — Executive Banking Performance Analytics Platfo
 # INDIAN NUMBER SYSTEM CURRENCY FORMATTER FUNCTION
 # =====================================================================
 def format_indian_currency(number, include_symbol=True):
+    """Formats a numeric value according to the Indian Numbering System (Lakhs/Crores)"""
     s = str(int(number))
     if len(s) <= 3:
         formatted = s
@@ -49,7 +50,7 @@ def format_indian_currency(number, include_symbol=True):
     return f"₹{formatted}" if include_symbol else formatted
 
 # =====================================================================
-# OPTION A BACKEND: SYNTHETIC DATA GENERATOR FACTORY
+# DATA FACTORY ENGINE A: SYNTHETIC DATA BASELINE GENERATOR
 # =====================================================================
 @st.cache_data
 def generate_default_fallback_data():
@@ -99,13 +100,13 @@ def generate_default_fallback_data():
     return df_cust, df_tx, df_loans
 
 # =====================================================================
-# OPTION B BACKEND: LIVE CLOUD WEB STREAM PIPELINE
+# DATA FACTORY ENGINE B: LIVE CLOUD WEB STREAM PIPELINE
 # =====================================================================
-@st.cache_data(ttl=600)  # Evicts and auto-refreshes data blocks every 10 minutes [1]
+@st.cache_data(ttl=600)  
 def load_live_web_streams():
     """Dynamically streams active CSV data blocks from your external web hooks."""
-    # Place your exact raw public web stream targets directly here [1]
-    cust_url = "https://google.com"
+    # 🔴 NOTE: Replace placeholder domains below with your active repository or sheet URLs
+    cust_url = "https://githubusercontent.com"
     tx_url = "https://githubusercontent.com"
     loan_url = "https://githubusercontent.com"
     
@@ -115,7 +116,7 @@ def load_live_web_streams():
     df_tx['Timestamp'] = pd.to_datetime(df_tx['Timestamp'])
     return df_cust, df_tx, df_loans
 # =====================================================================
-# 5. 🔮 SIDEBAR CONTROLS & DYNAMIC THREE-WAY DATA ROUTING MATRIX
+# BLOCK 2: SIDEBAR CONTROLS & DYNAMIC THREE-WAY DATA ROUTING MATRIX
 # =====================================================================
 st.sidebar.markdown("<h4 style='margin:0;'>🔮 Risk Simulator</h4>", unsafe_allow_html=True)
 
@@ -128,37 +129,33 @@ debt_status = st.sidebar.selectbox("Debt Status", ["No Active Loan", "Healthy Ac
 st.sidebar.markdown("---")
 st.sidebar.markdown("<h5 style='margin:0; color:#003366;'>📂 Operational Data Engine Sourcing</h5>", unsafe_allow_html=True)
 
-# THE THREE-WAY SWITCHER: Let user pick data execution track
+# THE THREE-WAY SWITCHER: Router execution selection
 data_source = st.sidebar.radio(
     "Select data engine input framework:",
     ["Synthetic Baseline Generator", "Live Cloud Web Streams", "Local Batch CSV Upload"]
 )
 
-# Initialize variables to hold selected state data
+# Variable allocation definitions
 df_cust, df_tx, df_loans = None, None, None
 
 if data_source == "Synthetic Baseline Generator":
-    # Option 1: Trigger the in-memory fallback generator
     df_cust, df_tx, df_loans = generate_default_fallback_data()
     st.sidebar.success("🤖 Core: Synthetic baseline engines active.")
 
 elif data_source == "Live Cloud Web Streams":
-    # Option 2: Fetch data via URL web hooks [1]
     try:
         df_cust, df_tx, df_loans = load_live_web_streams()
         st.sidebar.success("⚡ Cloud: Web data streams synchronized!")
     except Exception as e:
-        st.sidebar.error(f"❌ Web Stream Unreachable. Falling back to synthetic. Error: {e}")
+        st.sidebar.error(f"⚠️ Web Stream Unreachable. Using fallback engine data. Error: {e}")
         df_cust, df_tx, df_loans = generate_default_fallback_data()
 
 elif data_source == "Local Batch CSV Upload":
-    # Option 3: Expose drag and drop uploader files directly in sidebar look
     st.sidebar.markdown("##### Upload Unified CSV Ledger Sheets:")
     uploaded_cust = st.sidebar.file_uploader("Upload customer profiles CSV", type=["csv"], key="cust_up")
     uploaded_tx = st.sidebar.file_uploader("Upload transaction history CSV", type=["csv"], key="tx_up")
     uploaded_loans = st.sidebar.file_uploader("Upload loan records CSV", type=["csv"], key="loan_up")
     
-    # Verify that all three files are dropped before executing swap
     if uploaded_cust and uploaded_tx and uploaded_loans:
         try:
             df_cust = pd.read_csv(uploaded_cust)
@@ -193,9 +190,8 @@ else:
         st.sidebar.warning("⚠️ **Not Eligible:** Requires Monthly Tx ≥ 15 and Credit Score ≥ 650 to qualify.")
 
 # =====================================================================
-# RENDER ALL DASHBOARD BLOCKS ACCORDING TO CURRENT DATA SOURCE STATE
+# RENDER GLOBAL METRICS CARD ROW
 # =====================================================================
-# 3. EXECUTIVE MANAGEMENT METRIC HIGHLIGHTS
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 with kpi1: st.metric(label="Active Customers", value=format_indian_currency(len(df_cust), include_symbol=False))
 with kpi2: st.metric(label="Audited Transactions", value=format_indian_currency(len(df_tx), include_symbol=False))
@@ -211,7 +207,9 @@ with kpi4:
 
 st.markdown("<hr/>", unsafe_allow_html=True)
 
-# 4. VISUAL PANELS GRID
+# =====================================================================
+# RENDER VISUAL PLOTTING INTERACTION ROW CANVAS
+# =====================================================================
 sns.set_theme(style="whitegrid")
 plt.rcParams.update({'font.size': 8, 'axes.labelsize': 8.5, 'axes.titlesize': 9.5})
 col_left, col_right = st.columns(2)
@@ -242,9 +240,9 @@ with col_left:
 with col_right:
     fig_b, ax_b = plt.subplots(figsize=(6, 1.9))
     df_loan_risk = pd.merge(df_loans, df_cust, on='CustomerID')
-    def assign_credit_tier(score):
-        return 'Poor (<580)' if score < 580 else ('Fair (580-66)' if score < 670 else ('Good' if score < 740 else 'Excellent'))
-    df_loan_risk['Credit_Tier'] = df_loan_risk['CreditScore'].apply(assign_credit_tier)
+    def score_to_bucket(s): 
+        return 'Poor (<580)' if s < 580 else ('Fair (580-66)' if s < 670 else ('Good' if s < 740 else 'Excellent'))
+    df_loan_risk['Credit_Tier'] = df_loan_risk['CreditScore'].apply(score_to_bucket)
     tier_order = ['Poor (<580)', 'Fair (580-66)', 'Good', 'Excellent']
     loan_summary = df_loan_risk.groupby('Credit_Tier').agg(Total_Loans=('LoanID', 'count'), Defaults=('CurrentStatus', lambda x: (x == 'Defaulted').sum())).reindex(tier_order).fillna(0).reset_index()
     loan_summary['Default_Rate'] = (loan_summary['Defaults'] / loan_summary['Total_Loans']) * 100
@@ -266,8 +264,10 @@ with col_right:
     plt.close(fig_d)
 
 st.markdown("<hr/>", unsafe_allow_html=True)
-
-# SIMULATOR RECONCILIATION LOGIC OUTPUT GAUGE
+# =====================================================================
+# BLOCK 3: LIVE RISK TRACKER MONITOR & BATCH LEAD EXPORTER GENERATOR
+# =====================================================================
+# Re-calculate predictive risk probability score layers reactively
 base_risk = 35.0
 base_risk -= (credit_score - 300) * 0.06   
 base_risk += recency * 0.42                
@@ -276,9 +276,6 @@ if debt_status == "Delinquent / Default": base_risk += 28.0
 elif debt_status == "Healthy Active Loan": base_risk -= 4.0                       
 churn_probability = max(0.0, min(100.0, base_risk))
 
-# =====================================================================
-# BLOCK 3: LIVE RISK TRACKER MONITOR & BATCH LEAD EXPORTER GENERATOR
-# =====================================================================
 st.markdown("<h4 style='color:#003366; margin:0;'>🔮 Live Churn Probability Tracker Monitor Output</h4>", unsafe_allow_html=True)
 
 # 1. Compile flat low-profile horizontal bar gauge
@@ -319,14 +316,14 @@ tx_summary = df_tx.groupby('CustomerID').agg(
 df_leads = pd.merge(df_cust, tx_summary, on='CustomerID', how='inner')
 active_borrowers = df_loans['CustomerID'].unique()
 
-# Extract records based on relaxed density parameters to keep data populated
+# Extract records based on relaxed density parameters to keep data populated (Prevents 0 records bug)
 df_high_value_targets = df_leads[
     (df_leads['CreditScore'] >= 650) & 
     (df_leads['Monthly_Transactions'] >= 15) & 
     (~df_leads['CustomerID'].isin(active_borrowers))
 ].copy()
 
-# Append Indian localized CRM processing variables
+# Append Indian localized CRM processing variables using string accessor (Fixed Attribute Crash)
 np.random.seed(42)
 df_high_value_targets['Priority_Score'] = np.random.randint(85, 100, size=len(df_high_value_targets))
 df_high_value_targets['Corporate_Email'] = df_high_value_targets['CustomerID'].str.lower() + "@careerdreambank.in"
