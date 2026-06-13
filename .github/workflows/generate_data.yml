@@ -7,8 +7,12 @@ on:
   workflow_dispatch: # Allows manual click trigger
 
 jobs:
-  build-data:
+  build-data-and-models:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+
     steps:
     - name: Check out repository code
       uses: actions/checkout@v4
@@ -18,16 +22,20 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install Pandas and Dependencies
-      run: pip install pandas numpy
+    - name: Install Architecture Dependencies
+      run: |
+        pip install pandas numpy scikit-learn
 
-    - name: Execute Data Generation Script
+    - name: Execute Step A - Relational Data Synthesizer Engine
       run: python scripts/data_generator.py
+
+    - name: Execute Step B - Scikit-Learn Feature Predictor Training
+      run: python scripts/churn_predictor.py
 
     - name: Commit and Push Generated Data Files
       run: |
         git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@://github.com'
+        git config --global user.email '41898282+github-actions[bot]@://github.com'
         git add data/*.csv
-        git commit -m "chore: dynamically regenerate data profile CSV targets [skip ci]" || echo "No changes to commit"
+        git commit -m "chore: dynamically regenerate relational profiles and calculate feature models" || echo "No changes to commit"
         git push
