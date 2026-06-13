@@ -12,7 +12,7 @@ import os
 st.set_page_config(
     page_title="CareerDream Banking Analytics Platform", 
     page_icon="🚀", 
-    layout="wide"  # Uses fluid responsive widths to wrap neatly on laptop displays
+    layout="wide"  # Liquid layout dynamically fits laptop screen frames
 )
 
 st.title("🚀 CareerDream.in — Executive Banking Performance Analytics Platform")
@@ -110,8 +110,7 @@ st.markdown("---")
 st.subheader("📊 High-Resolution Executive Workspace Visual Matrix")
 
 sns.set_theme(style="whitegrid")
-# FIXED: Re-scaled to a highly compact 11x6.5 layout size to avoid screen spillover errors
-fig, axes = plt.subplots(2, 2, figsize=(11, 6.5))
+fig, axes = plt.subplots(2, 2, figsize=(11, 6.0))
 plt.rcParams.update({
     'font.size': 8, 
     'axes.labelsize': 9, 
@@ -127,7 +126,6 @@ sns.barplot(x='Importance', y='Feature', data=feature_data, ax=axes[0, 0], palet
 axes[0, 0].set_title("💡 Churn Predictive Feature Drivers", fontweight='bold')
 axes[0, 0].set_xlabel("Predictive Weight Value")
 axes[0, 0].set_ylabel("")
-axes[0, 0].tick_params(axis='both', labelsize=8)
 
 # Panel B: Loan Default Rates Plot
 df_loan_risk = pd.merge(df_loans, df_cust, on='CustomerID')
@@ -149,8 +147,7 @@ sns.barplot(x='Credit_Tier', y='Default_Rate', data=loan_summary, ax=axes[0, 1],
 axes[0, 1].set_title("📉 Asset Delinquency: Loan Default Rates", fontweight='bold')
 axes[0, 1].set_xlabel("")
 axes[0, 1].set_ylabel("Default Rate (%)")
-axes[0, 1].tick_params(axis='both', labelsize=8)
-for p in axes[0, 1].patches:
+for p in axes.patches:
     axes[0, 1].annotate(f"{p.get_height():.1f}%", (p.get_x() + p.get_width() / 2., p.get_height() + 0.3),
                         ha='center', va='center', xytext=(0, 3), textcoords='offset points', fontsize=8)
 
@@ -164,7 +161,6 @@ axes[1, 0].set_title("🚨 Transaction Auditing: Fraud Anomaly Plot", fontweight
 axes[1, 0].set_xlabel("Sequential Transaction Reference ID")
 axes[1, 0].set_ylabel("Volume Magnitude ($)")
 axes[1, 0].legend(loc='upper right', fontsize=7)
-axes[1, 0].tick_params(axis='both', labelsize=8)
 
 # Panel D: Revenue Contribution Per Card Tier
 tier_spend = df_tx.merge(df_cust, on='CustomerID').groupby('AccountTier')['Amount'].sum().reset_index()
@@ -173,34 +169,25 @@ axes[1, 1].pie(tier_spend['Amount'], labels=tier_spend['AccountTier'], autopct='
 axes[1, 1].set_title("💎 Capital Contribution: Share per Card Tier", fontweight='bold')
 
 plt.tight_layout(rect=[0, 0, 1, 0.95])
-
-# Forces strict matching scaling onto responsive CSS grid blocks
 st.pyplot(fig, use_container_width=True)
 st.markdown("---")
 # =====================================================================
-# 5. 🔮 SCREEN-SAFE REAL-TIME CUSTOMER CHURN RISK SIMULATOR ENGINE
+# 5. 🔮 SIDEBAR-NESTED CUSTOMER CHURN RISK SIMULATOR ENGINE
 # =====================================================================
-st.subheader("🔮 Interactive Real-Time Customer Churn Risk Simulator")
-st.markdown("Adjust parameters dynamically. The prediction layout scales cleanly within laptop viewport grids.")
+# KEY CHANGE: Mapping interactive controls directly to st.sidebar to sit cleanly on the side
+st.sidebar.header("🔮 Churn Risk Simulator Panel")
+st.sidebar.markdown("Modify customer metrics to predict risk scores instantly.")
 
-# FIXED: Nested row layout arrays to cluster sliders cleanly without taking side-by-side screen space
-row_input1, row_input2, row_input3 = st.columns(3)
+credit_score = st.sidebar.slider("Customer Credit Score Metric", min_value=300, max_value=850, value=710, step=10)
+age = st.sidebar.slider("Customer Age", min_value=18, max_value=80, value=35, step=1)
+recency = st.sidebar.slider("Days Since Last Transaction (Recency)", min_value=0, max_value=180, value=14, step=1)
+tx_count = st.sidebar.slider("Monthly Transaction Counts", min_value=0, max_value=100, value=38, step=1)
+debt_status = st.sidebar.selectbox(
+    "Active Account Debt Liability Status", 
+    ["No Active Loan", "Healthy Active Loan", "Delinquent / Default"]
+)
 
-with row_input1:
-    credit_score = st.slider("Customer Credit Score Metric", min_value=300, max_value=850, value=710, step=10)
-    age = st.slider("Customer Age", min_value=18, max_value=80, value=35, step=1)
-
-with row_input2:
-    recency = st.slider("Days Since Last Transaction (Recency)", min_value=0, max_value=180, value=14, step=1)
-    tx_count = st.slider("Monthly Transaction Counts", min_value=0, max_value=100, value=38, step=1)
-
-with row_input3:
-    debt_status = st.selectbox(
-        "Active Account Debt Liability Status", 
-        ["No Active Loan", "Healthy Active Loan", "Delinquent / Default"]
-    )
-
-# Model Formulation Calculation Code
+# Churn Mathematical Logic Weights Model
 base_risk = 35.0
 base_risk -= (credit_score - 300) * 0.06   
 base_risk += recency * 0.42                
@@ -212,11 +199,12 @@ elif debt_status == "Healthy Active Loan":
 
 churn_probability = max(0.0, min(100.0, base_risk))
 
-# FIXED: Replaced split columns with vertical block stacking to keep metrics nicely within screen bounds
-st.markdown("### Calculated Live Risk Profile Matrix Output:")
+# Display Output results cleanly in the main body space right under the analytics cards matrix
+st.subheader("🔮 Live Simulator Optimization Output Matrix")
+st.markdown("The metrics below respond instantly to parameter shifts handled in the sidebar dashboard panel.")
 
-# Compile highly responsive horizontal gauge tracker asset bar
-fig_sim, ax_sim = plt.subplots(figsize=(10, 1.2))
+# Compile responsive gauge tracker asset
+fig_sim, ax_sim = plt.subplots(figsize=(10, 1.0))
 
 if churn_probability < 30.0:
     bar_color = '#2ecc71'  
@@ -236,12 +224,11 @@ ax_sim.set_xlim(0, 100)
 ax_sim.set_xlabel("Probability Rate Metric (%)", fontsize=8)
 ax_sim.tick_params(axis='both', which='major', labelsize=8)
 
-# Overlay direct statistical percentage labels inside the visual timeline track boundaries
+# Add value label inside the timeline track boundary
 ax_sim.text(churn_probability + 1.5, 0, f"{churn_probability:.1f}%", va='center', ha='left', fontweight='bold', color='#333333', fontsize=10)
 
 sns.despine(left=True, bottom=False)
 plt.tight_layout()
 
-# Render output canvas elements sequentially inside responsive container parameters
 st.pyplot(fig_sim, use_container_width=True)
 alert_func(status_text)
