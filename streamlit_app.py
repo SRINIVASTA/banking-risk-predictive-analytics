@@ -8,12 +8,12 @@ from datetime import datetime, timedelta
 # 1. STREAMLIT GLOBAL CANVAS CONFIGURATION
 # =====================================================================
 st.set_page_config(
-    page_title="CareerDream Banking Analytics Platform", 
+    page_title="Banking Analytics Platform", 
     page_icon="🚀", 
     layout="wide"  
 )
 
-st.title("🚀 CareerDream.in — Executive Banking Performance Analytics Platform")
+st.title("🚀 Executive Banking Performance Analytics Platform")
 st.markdown("---")
 
 # =====================================================================
