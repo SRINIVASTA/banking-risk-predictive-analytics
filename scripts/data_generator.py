@@ -8,7 +8,7 @@ def generate_relational_banking_data():
     os.makedirs('data', exist_ok=True)
     
     np.random.seed(42)
-    NUM_CUSTOMERS, NUM_TRANSACTIONS, NUM_LOANS = 200, 1500, 80
+    NUM_CUSTOMERS, NUM_TRANSACTIONS, NUM_LOANS = 1000, 7500, 400
 
     # 1. Customer Profiles
     customer_ids = [f"CUST_{i:04d}" for i in range(1, NUM_CUSTOMERS + 1)]
