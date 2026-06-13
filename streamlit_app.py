@@ -214,3 +214,48 @@ st.pyplot(fig_sim, use_container_width=True)
 plt.close(fig_sim)
 
 alert_func(status_text)
+# =====================================================================
+# 6. 📞 BATCH EXPORTER ENGINE: HIGH-VALUE TARGET CALLING GENERATOR
+# =====================================================================
+st.markdown("---")
+st.markdown("<h4 style='color:#003366;'>📞 Premium Up-Sell Cohort Batch Target Calling List Generator</h4>", unsafe_allow_html=True)
+st.markdown("Generates actionable lead records matching target criteria from the active database tables.")
+
+tx_summary = df_tx.groupby('CustomerID').agg(
+    Monthly_Transactions=('TransactionID', 'count'),
+    Total_Spend_Volume=('Amount', 'sum')
+).reset_index()
+
+df_leads = pd.merge(df_cust, tx_summary, on='CustomerID', how='inner')
+active_borrowers = df_loans['CustomerID'].unique()
+
+df_high_value_targets = df_leads[
+    (df_leads['CreditScore'] >= 700) & 
+    (df_leads['Monthly_Transactions'] >= 30) & 
+    (~df_leads['CustomerID'].isin(active_borrowers))
+].copy()
+
+np.random.seed(42)
+df_high_value_targets['Priority_Score'] = np.random.randint(85, 100, size=len(df_high_value_targets))
+df_high_value_targets['Corporate_Email'] = df_high_value_targets['CustomerID'].lower() + "@careerdreambank.in"
+df_high_value_targets['Campaign_Status'] = "Ready to Call"
+
+df_final_calling_sheet = df_high_value_targets[[
+    'CustomerID', 'Age', 'CreditScore', 'AccountTier', 
+    'Monthly_Transactions', 'Corporate_Email', 'Priority_Score', 'Campaign_Status'
+]].sort_values(by='Priority_Score', ascending=False)
+
+call_col1, call_col2 = st.columns(2)
+with call_col1:
+    st.markdown(f"🎯 **System Found:** `{len(df_final_calling_sheet)}` Customer records matching the premium high-engagement, zero-debt profile criteria.")
+with call_col2:
+    csv_bytes = df_final_calling_sheet.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Download Lead List (CSV)",
+        data=csv_bytes,
+        file_name=f"banking_upsell_call_list_{datetime.now().strftime('%Y%m%d')}.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
+
+st.dataframe(df_final_calling_sheet, use_container_width=True, height=160)
