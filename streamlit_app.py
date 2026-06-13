@@ -10,12 +10,12 @@ import os
 # 1. STREAMLIT GLOBAL VIEWPORT INITIALIZATION (Auto-Fit Tuning)
 # =====================================================================
 st.set_page_config(
-    page_title="CareerDream Banking Analytics Platform", 
+    page_title="Banking Analytics Platform", 
     page_icon="🚀", 
     layout="wide"  # Liquid layout dynamically fits laptop screen frames
 )
 
-st.title("🚀 CareerDream.in — Executive Banking Performance Analytics Platform")
+st.title("🚀 Executive Banking Performance Analytics Platform")
 st.markdown("---")
 
 # =====================================================================
