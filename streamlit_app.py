@@ -235,9 +235,10 @@ df_high_value_targets = df_leads[
     (~df_leads['CustomerID'].isin(active_borrowers))
 ].copy()
 
+# FIXED: Integrated the .str accessor to patch the Series lowercase compilation crash
 np.random.seed(42)
 df_high_value_targets['Priority_Score'] = np.random.randint(85, 100, size=len(df_high_value_targets))
-df_high_value_targets['Corporate_Email'] = df_high_value_targets['CustomerID'].lower() + "@careerdreambank.in"
+df_high_value_targets['Corporate_Email'] = df_high_value_targets['CustomerID'].str.lower() + "@careerdreambank.in"
 df_high_value_targets['Campaign_Status'] = "Ready to Call"
 
 df_final_calling_sheet = df_high_value_targets[[
