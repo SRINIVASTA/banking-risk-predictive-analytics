@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import os
 
 # =====================================================================
-# 1. STREAMLIT GLOBAL VIEWPORT INITIALIZATION (Strict Screen Fit)
+# 1. STREAMLIT GLOBAL VIEWPORT & CSS COMPRESSION CONFIGURATION
 # =====================================================================
 st.set_page_config(
     page_title="Banking Analytics Platform", 
@@ -15,19 +15,28 @@ st.set_page_config(
     layout="wide"  
 )
 
-# Using compact markdown typography to save vital vertical screen rows
-st.markdown("<h2 style='margin:0; padding:0;'>🚀 Executive Banking Performance Analytics Platform</h2>", unsafe_allow_html=True)
-st.markdown("<hr style='margin:4px 0;'/>", unsafe_allow_html=True)
+# Force-inject ultra-tight padding overrides to reclaim every single pixel row
+st.markdown("""
+    <style>
+        /* Shave off massive empty top padding blocks */
+        .block-container {padding-top: 1rem !important; padding-bottom: 0rem !important;}
+        /* Tighten gaps between consecutive widget blocks */
+        [data-testid="stVerticalBlock"] {gap: 0.25rem !important;}
+        /* Shrink vertical heights of metric cards */
+        [data-testid="stMetric"] {padding: 2px 5px !important;}
+        hr {margin: 4px 0 !important;}
+        h2, h3, h4 {margin: 0 !important; padding: 0 !important;}
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown("<h3 style='color:#003366;'>🚀 Executive Banking Performance Analytics Platform</h3>", unsafe_allow_html=True)
+st.markdown("<hr/>", unsafe_allow_html=True)
 
 # =====================================================================
 # 2. RELATIONAL DATA PROCESSING PIPELINE
 # =====================================================================
 @st.cache_data
 def verify_and_load_relational_database():
-    """
-    Attempts to read data from the designated repository workspace structure.
-    If CSV files are missing, it triggers an in-memory fallback synthesizer.
-    """
     cust_path = 'data/customer_profiles.csv'
     tx_path = 'data/transaction_history.csv'
     loan_path = 'data/loan_records.csv'
@@ -89,35 +98,26 @@ df_cust, df_tx, df_loans = verify_and_load_relational_database()
 # 3. EXECUTIVE MANAGEMENT METRIC HIGHLIGHTS
 # =====================================================================
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-with kpi1:
-    st.metric(label="Total Active Customers", value=f"{len(df_cust)}")
-with kpi2:
-    st.metric(label="Total Audited Transactions", value=f"{len(df_tx)}")
+with kpi1: st.metric(label="Active Customers", value=f"{len(df_cust)}")
+with kpi2: st.metric(label="Audited Transactions", value=f"{len(df_tx)}")
 with kpi3:
     mean_amt = df_tx['Amount'].mean()
     std_amt = df_tx['Amount'].std()
     fraud_threshold = mean_amt + (3 * std_amt)
     anomalies_count = len(df_tx[df_tx['Amount'] > fraud_threshold])
-    st.metric(label="Flagged Fraud Anomalies", value=anomalies_count, delta="Outlier Threshold >3 SD", delta_color="inverse")
+    st.metric(label="Fraud Anomalies", value=anomalies_count, delta="Outliers >3 SD", delta_color="inverse")
 with kpi4:
     total_exposure = df_loans['LoanAmount'].sum()
-    st.metric(label="Active Capital Exposure", value=f"${total_exposure:,.0f}")
+    st.metric(label="Capital Exposure", value=f"${total_exposure:,.0f}")
 
-st.markdown("<hr style='margin:4px 0;'/>", unsafe_allow_html=True)
-
+st.markdown("<hr/>", unsafe_allow_html=True)
 # =====================================================================
-# 4. UNIFIED 4-PANEL LAPTOP VIEWPORT OPTIMISED VISUAL MATRIX
+# 4. UNIFIED 4-PANEL LAPTOP OPTIMISED VISUAL MATRIX
 # =====================================================================
-st.markdown("<h4 style='margin:0 0 4px 0; padding:0;'>📊 Executive Operational Workspace Visual Matrix</h4>", unsafe_allow_html=True)
-
 sns.set_theme(style="whitegrid")
-# COMPRESSED: Changed figure vertical scale down to 4.3 to pack charts tightly into the screen space
-fig, axes = plt.subplots(2, 2, figsize=(11, 4.3))
-plt.rcParams.update({
-    'font.size': 7.5, 
-    'axes.labelsize': 8.5, 
-    'axes.titlesize': 9
-})
+# ULTRA-COMPACT: Compressed matrix grid height down to 3.5 inches to perfectly prevent scroll overflows
+fig, axes = plt.subplots(2, 2, figsize=(11, 3.5))
+plt.rcParams.update({'font.size': 7, 'axes.labelsize': 7.5, 'axes.titlesize': 8})
 
 # Panel A: Feature Importance Plot
 feature_data = pd.DataFrame({
@@ -125,114 +125,80 @@ feature_data = pd.DataFrame({
     'Importance': [0.555690, 0.259590, 0.045125, 0.044271, 0.034610, 0.028467, 0.027646, 0.004600]
 }).sort_values(by='Importance', ascending=False)
 sns.barplot(x='Importance', y='Feature', data=feature_data, ax=axes[0, 0], palette='Blues_d', hue='Feature', legend=False)
-axes[0, 0].set_title("💡 Churn Predictive Feature Drivers", fontweight='bold', pad=4)
-axes[0, 0].set_xlabel("")
-axes[0, 0].set_ylabel("")
-axes[0, 0].tick_params(axis='both', labelsize=7.5)
+axes[0, 0].set_title("💡 Churn Predictive Feature Drivers", fontweight='bold', pad=2)
+axes[0, 0].set_xlabel(""); axes[0, 0].set_ylabel("")
 
 # Panel B: Loan Default Rates Plot
 df_loan_risk = pd.merge(df_loans, df_cust, on='CustomerID')
 def assign_credit_tier(score):
-    if score < 580: return 'Poor (<580)'
-    elif score < 670: return 'Fair (580-669)'
-    elif score < 740: return 'Good (670-739)'
-    else: return 'Excellent (740+)'
+    return 'Poor (<580)' if score < 580 else ('Fair (580-66)' if score < 670 else ('Good' if score < 740 else 'Excellent'))
 df_loan_risk['Credit_Tier'] = df_loan_risk['CreditScore'].apply(assign_credit_tier)
-tier_order = ['Poor (<580)', 'Fair (580-669)', 'Good (670-739)', 'Excellent (740+)']
+tier_order = ['Poor (<580)', 'Fair (580-66)', 'Good', 'Excellent']
 
-loan_summary = df_loan_risk.groupby('Credit_Tier').agg(
-    Total_Loans=('LoanID', 'count'),
-    Defaults=('CurrentStatus', lambda x: (x == 'Defaulted').sum())
-).reindex(tier_order).fillna(0).reset_index()
+loan_summary = df_loan_risk.groupby('Credit_Tier').agg(Total_Loans=('LoanID', 'count'), Defaults=('CurrentStatus', lambda x: (x == 'Defaulted').sum())).reindex(tier_order).fillna(0).reset_index()
 loan_summary['Default_Rate'] = (loan_summary['Defaults'] / loan_summary['Total_Loans']) * 100
 
 sns.barplot(x='Credit_Tier', y='Default_Rate', data=loan_summary, ax=axes[0, 1], palette='Oranges_r', hue='Credit_Tier', legend=False)
-axes[0, 1].set_title("📉 Asset Delinquency: Loan Default Rates", fontweight='bold', pad=4)
-axes[0, 1].set_xlabel("")
-axes[0, 1].set_ylabel("")
-axes[0, 1].tick_params(axis='both', labelsize=7.5)
+axes[0, 1].set_title("📉 Asset Delinquency: Loan Default Rates", fontweight='bold', pad=2)
+axes[0, 1].set_xlabel(""); axes[0, 1].set_ylabel("")
 for p in axes[0, 1].patches:
-    axes[0, 1].annotate(f"{p.get_height():.1f}%", (p.get_x() + p.get_width() / 2., p.get_height() + 0.2),
-                        ha='center', va='center', xytext=(0, 2), textcoords='offset points', fontsize=7.5)
+    axes[0, 1].annotate(f"{p.get_height():.1f}%", (p.get_x() + p.get_width() / 2., p.get_height() + 0.1), ha='center', va='center', xytext=(0, 2), textcoords='offset points', fontsize=6.5)
 
 # Panel C: Fraud Outlier Distribution
 df_tx['Z_Score'] = (df_tx['Amount'] - mean_amt) / std_amt
-df_tx['Status'] = np.where(df_tx['Z_Score'] > 3, 'Flagged Outlier (>3 SD)', 'Normal Core Process')
-sns.scatterplot(x=df_tx.index, y='Amount', hue='Status', data=df_tx,
-                palette={'Normal Core Process': '#cccccc', 'Flagged Outlier (>3 SD)' : '#cc0000'},
-                ax=axes[1, 0], alpha=0.4, s=8, edgecolor=None)
-axes[1, 0].set_title("🚨 Transaction Auditing: Fraud Anomaly Plot", fontweight='bold', pad=4)
-axes[1, 0].set_xlabel("")
-axes[1, 0].set_ylabel("")
-axes[1, 0].get_legend().remove()
-axes[1, 0].tick_params(axis='both', labelsize=7.5)
+df_tx['Status'] = np.where(df_tx['Z_Score'] > 3, 'Outlier', 'Normal')
+sns.scatterplot(x=df_tx.index, y='Amount', hue='Status', data=df_tx, palette={'Normal': '#cccccc', 'Outlier' : '#cc0000'}, ax=axes[1, 0], alpha=0.4, s=5, edgecolor=None)
+axes[1, 0].set_title("🚨 Transaction Auditing: Fraud Anomaly Plot", fontweight='bold', pad=2)
+axes[1, 0].set_xlabel(""); axes[1, 0].set_ylabel(""); axes[1, 0].get_legend().remove()
 
 # Panel D: Revenue Contribution Per Card Tier
 tier_spend = df_tx.merge(df_cust, on='CustomerID').groupby('AccountTier')['Amount'].sum().reset_index()
-axes[1, 1].pie(tier_spend['Amount'], labels=tier_spend['AccountTier'], autopct='%1.1f%%',
-               startangle=140, colors=['#cfd8dc', '#ffd54f', '#90caf9'], textprops={'fontsize': 7.5})
-axes[1, 1].set_title("💎 Capital Contribution: Share per Card Tier", fontweight='bold', pad=4)
+axes[1, 1].pie(tier_spend['Amount'], labels=tier_spend['AccountTier'], autopct='%1.1f%%', startangle=140, colors=['#cfd8dc', '#ffd54f', '#90caf9'], textprops={'fontsize': 7})
+axes[1, 1].set_title("💎 Capital Contribution: Share per Card Tier", fontweight='bold', pad=2)
 
-# Tight spacing adjustments to compress vertical margins completely
-plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=0.5)
+plt.tight_layout(pad=0.2, w_pad=0.3, h_pad=0.3)
 st.pyplot(fig, use_container_width=True)
-st.markdown("<hr style='margin:4px 0;'/>", unsafe_allow_html=True)
-# =====================================================================
-# 5. 🔮 SIDEBAR-NESTED CUSTOMER CHURN RISK SIMULATOR ENGINE
-# =====================================================================
-st.sidebar.markdown("<h3 style='margin:0;'>🔮 Churn Risk Simulator</h3>", unsafe_allow_html=True)
+st.markdown("<hr/>", unsafe_allow_html=True)
 
-credit_score = st.sidebar.slider("Customer Credit Score Metric", min_value=300, max_value=850, value=710, step=10)
-age = st.sidebar.slider("Customer Age", min_value=18, max_value=80, value=35, step=1)
-recency = st.sidebar.slider("Days Since Last Transaction (Recency)", min_value=0, max_value=180, value=14, step=1)
-tx_count = st.sidebar.slider("Monthly Transaction Counts", min_value=0, max_value=100, value=38, step=1)
-debt_status = st.sidebar.selectbox(
-    "Active Account Debt Liability Status", 
-    ["No Active Loan", "Healthy Active Loan", "Delinquent / Default"]
-)
+# =====================================================================
+# 5. 🔮 SIDEBAR-NESTED SIMULATOR CONTROLS & MONITOR
+# =====================================================================
+st.sidebar.markdown("<h4 style='margin:0;'>🔮 Risk Simulator</h4>", unsafe_allow_html=True)
 
-# Churn Mathematical Calculation Models
+credit_score = st.sidebar.slider("Credit Score", 300, 850, 710, 10)
+age = st.sidebar.slider("Age", 18, 80, 35, 1)
+recency = st.sidebar.slider("Recency (Days)", 0, 180, 14, 1)
+tx_count = st.sidebar.slider("Monthly Tx", 0, 100, 38, 1)
+debt_status = st.sidebar.selectbox("Debt Status", ["No Active Loan", "Healthy Active Loan", "Delinquent / Default"])
+
+# Calculation Model Logic Loop
 base_risk = 35.0
 base_risk -= (credit_score - 300) * 0.06   
 base_risk += recency * 0.42                
 base_risk -= tx_count * 0.32               
-if debt_status == "Delinquent / Default":
-    base_risk += 28.0                      
-elif debt_status == "Healthy Active Loan":
-    base_risk -= 4.0                       
-
+if debt_status == "Delinquent / Default": base_risk += 28.0                      
+elif debt_status == "Healthy Active Loan": base_risk -= 4.0                       
 churn_probability = max(0.0, min(100.0, base_risk))
 
-# Highly compressed output section to prevent screen overflow
-st.markdown("<h4 style='margin:0 0 2px 0; padding:0;'>🔮 Live Churn Probability Monitor Output</h4>", unsafe_allow_html=True)
-
-# Low-profile flat bar gauge sizing configuration
-fig_sim, ax_sim = plt.subplots(figsize=(10, 0.4))
+# Real-Time Monitoring Tracker Line Row
+st.markdown("<h4 style='color:#003366;'>🔮 Live Churn Probability Tracker Monitor Output</h4>", unsafe_allow_html=True)
+fig_sim, ax_sim = plt.subplots(figsize=(10, 0.25))
 
 if churn_probability < 30.0:
-    bar_color = '#2ecc71'  
-    status_text = f"🟢 HEALTHY ACCOUNT FRAME: ACTIVE PROFILE ({churn_probability:.1f}%) — Standard background monitoring metrics hold safe."
-    alert_func = st.success
+    bar_color, status_text, alert_func = '#2ecc71', f"🟢 HEALTHY PROFILE ({churn_probability:.1f}%) — Standard background monitoring applies.", st.success
 elif churn_probability < 70.0:
-    bar_color = '#f1c40f'  
-    status_text = f"🟡 ELEVATED RISK FRAME: WATCHLIST PROFILE ({churn_probability:.1f}%) — Initiate customer retention loops."
-    alert_func = st.warning
+    bar_color, status_text, alert_func = '#f1c40f', f"🟡 WATCHLIST PROFILE ({churn_probability:.1f}%) — Initiate customer retention loops.", st.warning
 else:
-    bar_color = '#e74c3c'  
-    status_text = f"🔴 HIGH CHURN RISK: CRITICAL PROFILE ({churn_probability:.1f}%) — Trigger immediate outreach protocols."
-    alert_func = st.error
+    bar_color, status_text, alert_func = '#e74c3c', f"🔴 CRITICAL PROFILE ({churn_probability:.1f}%) — Trigger immediate outreach protocols.", st.error
 
-ax_sim.barh(["Risk"], [churn_probability], color=bar_color, height=0.5, edgecolor='none')
+ax_sim.barh(["Risk"], [churn_probability], color=bar_color, height=0.6, edgecolor='none')
 ax_sim.set_xlim(0, 100)
-ax_sim.xaxis.set_visible(False) # Hiding axes ticks saves important vertical pixel heights
-ax_sim.yaxis.set_visible(False)
+ax_sim.xaxis.set_visible(False); ax_sim.yaxis.set_visible(False)
+ax_sim.text(churn_probability + 1.0, 0, f"{churn_probability:.1f}%", va='center', ha='left', fontweight='bold', color='#333333', fontsize=9)
 
-# Overlay value text string explicitly near the bar tracking edge
-ax_sim.text(churn_probability + 1.2, 0, f"{churn_probability:.1f}%", va='center', ha='left', fontweight='bold', color='#333333', fontsize=10)
-
-sns.despine(left=True, bottom=True)
+sns.despine(left=True, bottom=True, right=True, top=True)
 plt.tight_layout(pad=0)
-
-# Display charts and short feedback banner cleanly without adding vertical empty spaces
 st.pyplot(fig_sim, use_container_width=True)
+
+# Small alert container block row entry
 alert_func(status_text)
