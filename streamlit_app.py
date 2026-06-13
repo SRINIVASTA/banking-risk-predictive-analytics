@@ -215,12 +215,13 @@ plt.close(fig_sim)
 
 alert_func(status_text)
 # =====================================================================
-# 6. 📞 BATCH EXPORTER ENGINE: HIGH-VALUE TARGET CALLING GENERATOR
+# 6. 📞 BATCH EXPORTER ENGINE: ADJUSTED FOR HIGHER DENSITY IDENTIFICATION
 # =====================================================================
 st.markdown("---")
 st.markdown("<h4 style='color:#003366;'>📞 Premium Up-Sell Cohort Batch Target Calling List Generator</h4>", unsafe_allow_html=True)
 st.markdown("Generates actionable lead records matching target criteria from the active database tables.")
 
+# 1. Aggregate customer transaction parameters
 tx_summary = df_tx.groupby('CustomerID').agg(
     Monthly_Transactions=('TransactionID', 'count'),
     Total_Spend_Volume=('Amount', 'sum')
@@ -229,13 +230,14 @@ tx_summary = df_tx.groupby('CustomerID').agg(
 df_leads = pd.merge(df_cust, tx_summary, on='CustomerID', how='inner')
 active_borrowers = df_loans['CustomerID'].unique()
 
+# FIXED: Adjusted thresholds down to isolate a dense list of high-value targets (Prevents 0 record bug)
 df_high_value_targets = df_leads[
-    (df_leads['CreditScore'] >= 700) & 
-    (df_leads['Monthly_Transactions'] >= 30) & 
+    (df_leads['CreditScore'] >= 650) & 
+    (df_leads['Monthly_Transactions'] >= 15) & 
     (~df_leads['CustomerID'].isin(active_borrowers))
 ].copy()
 
-# FIXED: Integrated the .str accessor to patch the Series lowercase compilation crash
+# 2. Append contact records securely using the correct string accessor
 np.random.seed(42)
 df_high_value_targets['Priority_Score'] = np.random.randint(85, 100, size=len(df_high_value_targets))
 df_high_value_targets['Corporate_Email'] = df_high_value_targets['CustomerID'].str.lower() + "@careerdreambank.in"
@@ -246,6 +248,7 @@ df_final_calling_sheet = df_high_value_targets[[
     'Monthly_Transactions', 'Corporate_Email', 'Priority_Score', 'Campaign_Status'
 ]].sort_values(by='Priority_Score', ascending=False)
 
+# 3. Output display panels
 call_col1, call_col2 = st.columns(2)
 with call_col1:
     st.markdown(f"🎯 **System Found:** `{len(df_final_calling_sheet)}` Customer records matching the premium high-engagement, zero-debt profile criteria.")
