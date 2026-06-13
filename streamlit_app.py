@@ -1,38 +1,47 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
+import matplotlib.pyplot as plt
+import seaborn as sns
 from datetime import datetime, timedelta
+import os
 
 # =====================================================================
-# 1. STREAMLIT GLOBAL CANVAS CONFIGURATION
+# 1. STREAMLIT ENGINE WORKSPACE INITIALIZATION
 # =====================================================================
 st.set_page_config(
-    page_title="Banking Analytics Platform", 
+    page_title="CareerDream Banking Analytics Platform", 
     page_icon="🚀", 
-    layout="wide"  
+    layout="wide"
 )
 
-st.title("🚀 Executive Banking Performance Analytics Platform")
+st.title("🚀 CareerDream.in — Executive Banking Performance Analytics Platform")
 st.markdown("---")
 
 # =====================================================================
-# 2. DATA PROCESSING ENGINE (Self-Healing Fallback Generator)
+# 2. RELATIONAL DATA PROCESSING PIPELINE
 # =====================================================================
 @st.cache_data
-def load_and_process_banking_data():
+def verify_and_load_relational_database():
+    """
+    Attempts to read data from the designated repository workspace structure.
+    If CSV files are missing, it triggers an in-memory fallback synthesizer.
+    """
+    cust_path = 'data/customer_profiles.csv'
+    tx_path = 'data/transaction_history.csv'
+    loan_path = 'data/loan_records.csv'
+    
     try:
-        df_cust = pd.read_csv('customer_profiles.csv')
-        df_tx = pd.read_csv('transaction_history.csv')
-        df_loans = pd.read_csv('loan_records.csv')
+        df_cust = pd.read_csv(cust_path)
+        df_tx = pd.read_csv(tx_path)
+        df_loans = pd.read_csv(loan_path)
         df_tx['Timestamp'] = pd.to_datetime(df_tx['Timestamp'])
         return df_cust, df_tx, df_loans
     except FileNotFoundError:
-        # If base files are missing on disk, automatically regenerate them to avoid app crashes
+        # In-memory dynamic generation fallback to ensure app stability
         np.random.seed(42)
         NUM_CUSTOMERS, NUM_TRANSACTIONS, NUM_LOANS = 200, 1500, 80
 
-        # Customer Profiles
         customer_ids = [f"CUST_{i:04d}" for i in range(1, NUM_CUSTOMERS + 1)]
         df_cust = pd.DataFrame({
             'CustomerID': customer_ids,
@@ -42,7 +51,6 @@ def load_and_process_banking_data():
             'AccountTier': np.random.choice(['Silver', 'Gold', 'Platinum'], size=NUM_CUSTOMERS, p=[0.5, 0.3, 0.2])
         })
 
-        # Transactions with Fraud Spikes
         tx_amounts = np.round(np.random.exponential(scale=80, size=NUM_TRANSACTIONS) + 2, 2)
         fraud_indices = np.random.choice(range(NUM_TRANSACTIONS), size=int(NUM_TRANSACTIONS * 0.015), replace=False)
         tx_amounts[fraud_indices] = np.round(np.random.uniform(3000, 12000, size=len(fraud_indices)), 2)
@@ -58,7 +66,6 @@ def load_and_process_banking_data():
             'IsFlaggedFraud': [1 if i in fraud_indices else 0 for i in range(NUM_TRANSACTIONS)]
         })
 
-        # Loan Performance Records
         loan_cust_ids = np.random.choice(customer_ids, size=NUM_LOANS, replace=False)
         loan_status = []
         for cid in loan_cust_ids:
@@ -74,17 +81,12 @@ def load_and_process_banking_data():
             'TermMonths': np.random.choice([12, 24, 36, 48, 60], size=NUM_LOANS),
             'CurrentStatus': loan_status
         })
-
-        # Save files down so they persist locally
-        df_cust.to_csv('customer_profiles.csv', index=False)
-        df_tx.to_csv('transaction_history.csv', index=False)
-        df_loans.to_csv('loan_records.csv', index=False)
         return df_cust, df_tx, df_loans
 
-df_cust, df_tx, df_loans = load_and_process_banking_data()
+df_cust, df_tx, df_loans = verify_and_load_relational_database()
 
 # =====================================================================
-# 3. EXECUTIVE KPI CARD HEADER ROW
+# 3. EXECUTIVE MANAGEMENT METRIC HIGHLIGHTS
 # =====================================================================
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 with kpi1:
@@ -94,8 +96,8 @@ with kpi2:
 with kpi3:
     mean_amt = df_tx['Amount'].mean()
     std_amt = df_tx['Amount'].std()
-    fraud_limit = mean_amt + (3 * std_amt)
-    anomalies_count = len(df_tx[df_tx['Amount'] > fraud_limit])
+    fraud_threshold = mean_amt + (3 * std_amt)
+    anomalies_count = len(df_tx[df_tx['Amount'] > fraud_threshold])
     st.metric(label="Flagged Fraud Anomalies", value=anomalies_count, delta="Outlier Threshold >3 SD", delta_color="inverse")
 with kpi4:
     total_exposure = df_loans['LoanAmount'].sum()
@@ -104,106 +106,126 @@ with kpi4:
 st.markdown("---")
 
 # =====================================================================
-# 4. DESKTOP GRID LAYOUT CANVAS (2x2 Matrix Structure)
+# 4. UNIFIED 4-PANEL PUBLICATION GRAPHICS GRID (Matplotlib & Seaborn)
 # =====================================================================
-row1_col1, row1_col2 = st.columns(2)
-row2_col1, row2_col2 = st.columns(2)
+st.subheader("📊 High-Resolution Executive Workspace Visual Matrix")
 
-# PANEL A: FEATURE IMPORTANCE DRIVERS
-with row1_col1:
-    st.subheader("💡 Churn Predictive Feature Drivers")
-    feature_data = pd.DataFrame({
-        'Feature': ['Recency', 'Tx_Count', 'CreditScore', 'Total_Spend', 'Income', 'Age', 'Avg_Tx_Value', 'Has_Active_Loan'],
-        'Importance': [0.555690, 0.259590, 0.045125, 0.044271, 0.034610, 0.028467, 0.027646, 0.004600]
-    }).sort_values(by='Importance', ascending=True)
-    
-    fig_a = px.bar(
-        feature_data, x='Importance', y='Feature', orientation='h',
-        color='Importance', color_continuous_scale='Blues',
-        labels={'Importance': 'Predictive Weight Value', 'Feature': ''}
-    )
-    fig_a.update_layout(height=350, margin=dict(l=10, r=10, t=10, b=10), coloraxis_showscale=False)
-    st.plotly_chart(fig_a, use_container_width=True)
+sns.set_theme(style="whitegrid")
+fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+plt.rcParams.update({'font.size': 10, 'axes.labelsize': 11, 'axes.titlesize': 12})
 
-# PANEL B: LOAN PORTFOLIO DEFAULT ANALYSIS
-with row1_col2:
-    st.subheader("📉 Asset Delinquency: Loan Default Rates")
-    df_loan_risk = pd.merge(df_loans, df_cust, on='CustomerID')
-    
-    def score_to_bucket(score):
-        if score < 580: return 'Poor (<580)'
-        elif score < 670: return 'Fair (580-669)'
-        elif score < 740: return 'Good (670-739)'
-        else: return 'Excellent (740+)'
-        
-    df_loan_risk['Credit_Tier'] = df_loan_risk['CreditScore'].apply(score_to_bucket)
-    tier_order = ['Poor (<580)', 'Fair (580-669)', 'Good (670-739)', 'Excellent (740+)']
-    
-    loan_summary = df_loan_risk.groupby('Credit_Tier').agg(
-        Total_Loans=('LoanID', 'count'),
-        Defaults=('CurrentStatus', lambda x: (x == 'Defaulted').sum())
-    ).reindex(tier_order).fillna(0).reset_index()
-    loan_summary['Default_Rate'] = (loan_summary['Defaults'] / loan_summary['Total_Loans']) * 100
-    
-    fig_b = px.bar(
-        loan_summary, x='Credit_Tier', y='Default_Rate',
-        color='Default_Rate', color_continuous_scale='Oranges',
-        text=loan_summary['Default_Rate'].apply(lambda x: f"{x:.1f}%"),
-        labels={'Credit_Tier': 'Customer Credit Risk Group', 'Default_Rate': 'Default Rate (%)'}
-    )
-    fig_b.update_layout(height=350, margin=dict(l=10, r=10, t=10, b=10), coloraxis_showscale=False)
-    fig_b.update_traces(textposition='outside', textfont_size=12)
-    st.plotly_chart(fig_b, use_container_width=True)
+# Panel A: Feature Importance Plot
+feature_data = pd.DataFrame({
+    'Feature': ['Recency', 'Tx_Count', 'CreditScore', 'Total_Spend', 'Income', 'Age', 'Avg_Tx_Value', 'Has_Active_Loan'],
+    'Importance': [0.555690, 0.259590, 0.045125, 0.044271, 0.034610, 0.028467, 0.027646, 0.004600]
+}).sort_values(by='Importance', ascending=True)
+sns.barplot(x='Importance', y='Feature', data=feature_data, ax=axes[0, 0], palette='Blues_d')
+axes[0, 0].set_title("💡 Churn Predictive Feature Drivers")
+axes[0, 0].set_xlabel("Predictive Weight Value")
+axes[0, 0].set_ylabel("")
 
-# PANEL C: FRAUD EXPOSURE OUTLIER DISTRIBUTION
-with row2_col1:
-    st.subheader("🚨 Transaction Auditing: Fraud Anomaly Plot")
-    df_tx['Z_Score'] = (df_tx['Amount'] - mean_amt) / std_amt
-    df_tx['Status'] = np.where(df_tx['Z_Score'] > 3, 'Flagged Outlier (>3 SD)', 'Normal Core Process')
-    
-    fig_c = px.scatter(
-        df_tx.reset_index(), x='index', y='Amount', color='Status',
-        color_discrete_map={'Normal Core Process': '#cccccc', 'Flagged Outlier (>3 SD)': '#cc0000'},
-        labels={'index': 'Sequential Transaction Reference ID', 'Amount': 'Volume Magnitude ($)'}
-    )
-    fig_c.add_hline(y=fraud_limit, line_dash="dash", line_color="#cc0000", line_width=2, annotation_text="Z-Score Threshold")
-    fig_c.update_layout(height=350, margin=dict(l=10, r=10, t=10, b=10), legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
-    st.plotly_chart(fig_c, use_container_width=True)
+# Panel B: Loan Default Rates Plot
+df_loan_risk = pd.merge(df_loans, df_cust, on='CustomerID')
+def assign_credit_tier(score):
+    if score < 580: return 'Poor (<580)'
+    elif score < 670: return 'Fair (580-669)'
+    elif score < 740: return 'Good (670-739)'
+    else: return 'Excellent (740+)'
+df_loan_risk['Credit_Tier'] = df_loan_risk['CreditScore'].apply(assign_credit_tier)
+tier_order = ['Poor (<580)', 'Fair (580-669)', 'Good (670-739)', 'Excellent (740+)']
 
-# PANEL D: ACCOUNT TIER CORE VOLUME SEGMENTATION
-with row2_col2:
-    st.subheader("💎 Capital Contribution: Share per Card Tier")
-    tier_spend = df_tx.merge(df_cust, on='CustomerID').groupby('AccountTier')['Amount'].sum().reset_index()
-    
-    fig_d = px.pie(
-        tier_spend, values='Amount', names='AccountTier',
-        color='AccountTier', color_discrete_map={'Silver': '#90caf9', 'Gold': '#ffd54f', 'Platinum': '#cfd8dc'},
-        hole=0.3
-    )
-    fig_d.update_traces(textposition='inside', textinfo='percent+label', textfont_size=13)
-    fig_d.update_layout(height=350, margin=dict(l=10, r=10, t=10, b=10), showlegend=False)
-    st.plotly_chart(fig_d, use_container_width=True)
+loan_summary = df_loan_risk.groupby('Credit_Tier').agg(
+    Total_Loans=('LoanID', 'count'),
+    Defaults=('CurrentStatus', lambda x: (x == 'Defaulted').sum())
+).reindex(tier_order).fillna(0).reset_index()
+loan_summary['Default_Rate'] = (loan_summary['Defaults'] / loan_summary['Total_Loans']) * 100
 
-# =====================================================================
-# 5. RETENTION SIMULATOR CONTROL PANEL (Widescreen Collapsible Drawer)
-# =====================================================================
+sns.barplot(x='Credit_Tier', y='Default_Rate', data=loan_summary, ax=axes[0, 1], palette='Oranges_r')
+axes[0, 1].set_title("📉 Asset Delinquency: Loan Default Rates")
+axes[0, 1].set_xlabel("Customer Credit Risk Group")
+axes[0, 1].set_ylabel("Default Rate (%)")
+for p in axes[0, 1].patches:
+    axes[0, 1].annotate(f"{p.get_height():.1f}%", (p.get_x() + p.get_width() / 2., p.get_height()),
+                        ha='center', va='center', xytext=(0, 5), textcoords='offset points')
+
+# Panel C: Fraud Outlier Distribution
+df_tx['Z_Score'] = (df_tx['Amount'] - mean_amt) / std_amt
+df_tx['Status'] = np.where(df_tx['Z_Score'] > 3, 'Flagged Outlier (>3 SD)', 'Normal Core Process')
+sns.scatterplot(x=df_tx.index, y='Amount', hue='Status', data=df_tx,
+                palette={'Normal Core Process': '#cccccc', 'Flagged Outlier (>3 SD)' : '#cc0000'},
+                ax=axes[1, 0], alpha=0.7, edgecolor=None)
+axes[1, 0].set_title("🚨 Transaction Auditing: Fraud Anomaly Plot")
+axes[1, 0].set_xlabel("Sequential Transaction Reference ID")
+axes[1, 0].set_ylabel("Volume Magnitude ($)")
+axes[1, 0].legend(loc='upper right')
+
+# Panel D: Revenue Contribution Per Card Tier
+df_tier_cap = df_cust.groupby('AccountTier')['Income'].sum().reset_index()
+axes[1, 1].pie(df_tier_cap['Income'], labels=df_tier_cap['AccountTier'], autopct='%1.1f%%',
+               startangle=140, colors=sns.color_palette("Blues_r", n_colors=3))
+axes[1, 1].set_title("💎 Capital Contribution: Share per Card Tier")
+
+plt.tight_layout()
+st.pyplot(fig)
 st.markdown("---")
-with st.expander("🔮 Open Interactive Real-Time Customer Churn Risk Simulator"):
-    sim_col1, sim_col2, sim_col3 = st.columns(3)
-    with sim_col1:
-        score_input = st.slider("Customer Credit Score Metric", 300, 850, 680)
-        age_input = st.slider("Customer Age", 18, 80, 42)
-    with sim_col2:
-        rec_input = st.slider("Days Since Last Transaction (Recency)", 0, 180, 14)
-        tx_input = st.slider("Monthly Transaction Counts", 0, 100, 22)
-    with sim_col3:
-        loan_input = st.selectbox("Active Account Debt Liability Status", ["No Active Loan", "Has Active Bank Loan"])
-        loan_numeric = 1 if loan_input == "Has Active Bank Loan" else 0
-        
-    churn_prob = (rec_input / 180) * 0.75 + (1 - (score_input / 850)) * 0.25 - (loan_numeric * 0.15)
-    churn_prob = max(0.0, min(1.0, churn_prob))
+# =====================================================================
+# 5. 🔮 REAL-TIME CUSTOMER CHURN RISK SIMULATOR ENGINE
+# =====================================================================
+st.subheader("🔮 Open Interactive Real-Time Customer Churn Risk Simulator")
+
+sim_input, sim_output = st.columns([1, 1.2])
+
+with sim_input:
+    st.markdown("**Adjust Customer Behavioral & Demographic Parameters:**")
+    credit_score = st.slider("Customer Credit Score Metric", min_value=300, max_value=850, value=710, step=10)
+    age = st.slider("Customer Age", min_value=18, max_value=80, value=35, step=1)
+    recency = st.slider("Days Since Last Transaction (Recency)", min_value=0, max_value=180, value=14, step=1)
+    tx_count = st.slider("Monthly Transaction Counts", min_value=0, max_value=100, value=38, step=1)
+    debt_status = st.selectbox(
+        "Active Account Debt Liability Status", 
+        ["No Active Loan", "Healthy Active Loan", "Delinquent / Default"]
+    )
+
+# Real-Time Mathematical Logic Model based on Feature Weight Matrix
+base_risk = 35.0
+base_risk -= (credit_score - 300) * 0.06   
+base_risk += recency * 0.42                
+base_risk -= tx_count * 0.32               
+if debt_status == "Delinquent / Default":
+    base_risk += 28.0                      
+elif debt_status == "Healthy Active Loan":
+    base_risk -= 4.0                       
+
+# Maintain boundary safety constraints [0% - 100%]
+churn_probability = max(0.0, min(100.0, base_risk))
+
+with sim_output:
+    st.markdown("**Calculated Live Risk Profile Matrix Output:**")
     
-    if churn_prob > 0.55:
-        st.error(f"🔴 CRITICAL ALERT: HIGH RISK OF CUSTOMER CHURN ({churn_prob * 100:.1f}%) — Dispatch immediate retention vouchers.")
+    fig_sim, ax_sim = plt.subplots(figsize=(6, 1.8))
+    
+    if churn_probability < 30.0:
+        bar_color = '#2ecc71'  
+        status_text = f"🟢 HEALTHY ACCOUNT FRAME: ACTIVE PROFILE ({churn_probability:.1f}%) — Standard background monitoring metrics hold safe."
+        alert_func = st.success
+    elif churn_probability < 70.0:
+        bar_color = '#f1c40f'  
+        status_text = f"🟡 ELEVATED RISK FRAME: WATCHLIST PROFILE ({churn_probability:.1f}%) — Initiate customer retention loops."
+        alert_func = st.warning
     else:
-        st.success(f"🟢 HEALTHY ACCOUNT FRAME: ACTIVE PROFILE ({churn_prob * 100:.1f}%) — Standard background monitoring metrics hold safe.")
+        bar_color = '#e74c3c'  
+        status_text = f"🔴 HIGH CHURN RISK: CRITICAL PROFILE ({churn_probability:.1f}%) — Trigger immediate outreach protocols."
+        alert_func = st.error
+
+    ax_sim.barh(["Churn Risk"], [churn_probability], color=bar_color, height=0.4, edgecolor='none')
+    ax_sim.set_xlim(0, 100)
+    ax_sim.set_xlabel("Probability Rate Metric (%)", fontsize=9)
+    ax_sim.tick_params(axis='both', which='major', labelsize=9)
+    
+    ax_sim.text(churn_probability + 2, 0, f"{churn_probability:.1f}%", va='center', ha='left', fontweight='bold', color='#333333', fontsize=11)
+    
+    sns.despine(left=True, bottom=False)
+    plt.tight_layout()
+    
+    st.pyplot(fig_sim)
+    alert_func(status_text)
