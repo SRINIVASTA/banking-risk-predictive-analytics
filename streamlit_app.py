@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import os
 
 # =====================================================================
-# 1. STREAMLIT GLOBAL VIEWPORT INITIALIZATION (Responsive Fix)
+# 1. STREAMLIT GLOBAL VIEWPORT INITIALIZATION (Padding Collisions Fixed)
 # =====================================================================
 st.set_page_config(
     page_title="Banking Analytics Platform", 
@@ -15,18 +15,19 @@ st.set_page_config(
     layout="wide"  
 )
 
-# Optimized global spacing styles to completely prevent element collisions
+# FIXED: Increased block spacing and set clear padding values to prevent element collisions
 st.markdown("""
     <style>
-        .block-container {padding-top: 1.5rem !important; padding-bottom: 0rem !important;}
-        [data-testid="stVerticalBlock"] {gap: 0.5rem !important;}
-        [data-testid="stMetric"] {padding: 5px 10px !important;}
-        hr {margin: 8px 0 !important;}
-        h2, h3, h4 {margin: 0 !important; padding: 4px 0 !important;}
+        .block-container {padding-top: 1.8rem !important; padding-bottom: 0rem !important;}
+        [data-testid="stVerticalBlock"] {gap: 0.8rem !important;}
+        [data-testid="stMetric"] {padding: 6px 12px !important;}
+        hr {margin: 10px 0 !important; border-top: 1px solid #ddd !important;}
+        h3 {margin: 0 0 10px 0 !important; padding: 0 !important; line-height: 1.2 !important;}
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h3 style='color:#003366; margin-bottom: 5px;'>🚀 Executive Banking Performance Analytics Platform</h3>", unsafe_allow_html=True)
+# Main Dashboard Header Text
+st.markdown("<h3 style='color:#003366;'>🚀 Executive Banking Performance Analytics Platform</h3>", unsafe_allow_html=True)
 
 # =====================================================================
 # 2. RELATIONAL DATA PROCESSING PIPELINE
@@ -113,11 +114,9 @@ st.markdown("<hr/>", unsafe_allow_html=True)
 sns.set_theme(style="whitegrid")
 plt.rcParams.update({'font.size': 8, 'axes.labelsize': 8.5, 'axes.titlesize': 9.5})
 
-# Split the canvas into two robust master columns to avoid overlapping subplots
 col_left, col_right = st.columns(2)
 
 with col_left:
-    # Panel A: Feature Importance Plot
     fig_a, ax_a = plt.subplots(figsize=(6, 2.0))
     feature_data = pd.DataFrame({
         'Feature': ['Recency', 'Tx_Count', 'CreditScore', 'Total_Spend', 'Income', 'Age', 'Avg_Tx_Value', 'Has_Active_Loan'],
@@ -130,7 +129,6 @@ with col_left:
     st.pyplot(fig_a, use_container_width=True)
     plt.close(fig_a)
 
-    # Panel C: Fraud Outlier Distribution
     fig_c, ax_c = plt.subplots(figsize=(6, 2.0))
     df_tx['Z_Score'] = (df_tx['Amount'] - mean_amt) / std_amt
     df_tx['Status'] = np.where(df_tx['Z_Score'] > 3, 'Outlier', 'Normal')
@@ -142,7 +140,6 @@ with col_left:
     plt.close(fig_c)
 
 with col_right:
-    # Panel B: Loan Default Rates Plot
     fig_b, ax_b = plt.subplots(figsize=(6, 2.0))
     df_loan_risk = pd.merge(df_loans, df_cust, on='CustomerID')
     def assign_credit_tier(score):
@@ -162,7 +159,6 @@ with col_right:
     st.pyplot(fig_b, use_container_width=True)
     plt.close(fig_b)
 
-    # Panel D: Revenue Contribution Per Card Tier
     fig_d, ax_d = plt.subplots(figsize=(6, 2.0))
     tier_spend = df_tx.merge(df_cust, on='CustomerID').groupby('AccountTier')['Amount'].sum().reset_index()
     ax_d.pie(tier_spend['Amount'], labels=tier_spend['AccountTier'], autopct='%1.1f%%', startangle=140, colors=['#cfd8dc', '#ffd54f', '#90caf9'], textprops={'fontsize': 7.5})
@@ -214,5 +210,4 @@ plt.tight_layout(pad=0)
 st.pyplot(fig_sim, use_container_width=True)
 plt.close(fig_sim)
 
-# Small alert container block row entry
 alert_func(status_text)
