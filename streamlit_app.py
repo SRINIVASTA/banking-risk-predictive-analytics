@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import os
 
 # =====================================================================
-# 1. STREAMLIT GLOBAL VIEWPORT INITIALIZATION (Padding Collisions Fixed)
+# 1. STREAMLIT GLOBAL VIEWPORT INITIALIZATION (Auto-Fit Layout Tuning)
 # =====================================================================
 st.set_page_config(
     page_title="Banking Analytics Platform", 
@@ -15,19 +15,22 @@ st.set_page_config(
     layout="wide"  
 )
 
-# FIXED: Increased block spacing and set clear padding values to prevent element collisions
+# FIXED: Native theme spacing corrections pulling the entire container structure upward
 st.markdown("""
     <style>
-        .block-container {padding-top: 1.8rem !important; padding-bottom: 0rem !important;}
-        [data-testid="stVerticalBlock"] {gap: 0.8rem !important;}
-        [data-testid="stMetric"] {padding: 6px 12px !important;}
-        hr {margin: 10px 0 !important; border-top: 1px solid #ddd !important;}
-        h3 {margin: 0 0 10px 0 !important; padding: 0 !important; line-height: 1.2 !important;}
+        /* Eliminates the giant hidden top spacing padding block of the main page container */
+        .block-container {padding-top: 0rem !important; padding-bottom: 0rem !important;}
+        /* Overrides standard app header padding elements */
+        [data-testid="stHeader"] {background: transparent; height: 0px;}
+        /* Sets uniform spacing parameters around KPIs */
+        [data-testid="stMetric"] {padding: 4px 8px !important;}
+        [data-testid="stVerticalBlock"] {gap: 0.6rem !important;}
+        hr {margin: 6px 0 !important; border-top: 1px solid #ddd !important;}
     </style>
 """, unsafe_allow_html=True)
 
-# Main Dashboard Header Text
-st.markdown("<h3 style='color:#003366;'>🚀 Executive Banking Performance Analytics Platform</h3>", unsafe_allow_html=True)
+# FIXED: Replaced raw custom HTML with native Streamlit title to avoid text-clipping overlaps
+st.title("🚀 Executive Banking Performance Analytics Platform")
 
 # =====================================================================
 # 2. RELATIONAL DATA PROCESSING PIPELINE
