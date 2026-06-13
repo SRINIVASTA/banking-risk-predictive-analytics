@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import os
 
 # =====================================================================
-# 1. STREAMLIT GLOBAL VIEWPORT & CSS COMPRESSION CONFIGURATION
+# 1. STREAMLIT GLOBAL VIEWPORT INITIALIZATION (Responsive Fix)
 # =====================================================================
 st.set_page_config(
     page_title="Banking Analytics Platform", 
@@ -15,22 +15,18 @@ st.set_page_config(
     layout="wide"  
 )
 
-# Force-inject ultra-tight padding overrides to reclaim every single pixel row
+# Optimized global spacing styles to completely prevent element collisions
 st.markdown("""
     <style>
-        /* Shave off massive empty top padding blocks */
-        .block-container {padding-top: 1rem !important; padding-bottom: 0rem !important;}
-        /* Tighten gaps between consecutive widget blocks */
-        [data-testid="stVerticalBlock"] {gap: 0.25rem !important;}
-        /* Shrink vertical heights of metric cards */
-        [data-testid="stMetric"] {padding: 2px 5px !important;}
-        hr {margin: 4px 0 !important;}
-        h2, h3, h4 {margin: 0 !important; padding: 0 !important;}
+        .block-container {padding-top: 1.5rem !important; padding-bottom: 0rem !important;}
+        [data-testid="stVerticalBlock"] {gap: 0.5rem !important;}
+        [data-testid="stMetric"] {padding: 5px 10px !important;}
+        hr {margin: 8px 0 !important;}
+        h2, h3, h4 {margin: 0 !important; padding: 4px 0 !important;}
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h3 style='color:#003366;'>🚀 Executive Banking Performance Analytics Platform</h3>", unsafe_allow_html=True)
-st.markdown("<hr/>", unsafe_allow_html=True)
+st.markdown("<h3 style='color:#003366; margin-bottom: 5px;'>🚀 Executive Banking Performance Analytics Platform</h3>", unsafe_allow_html=True)
 
 # =====================================================================
 # 2. RELATIONAL DATA PROCESSING PIPELINE
@@ -112,52 +108,69 @@ with kpi4:
 
 st.markdown("<hr/>", unsafe_allow_html=True)
 # =====================================================================
-# 4. UNIFIED 4-PANEL LAPTOP OPTIMISED VISUAL MATRIX
+# 4. UNIFIED GRID CONFIGURATION (Streamlit Column Based Isolation)
 # =====================================================================
 sns.set_theme(style="whitegrid")
-# ULTRA-COMPACT: Compressed matrix grid height down to 3.5 inches to perfectly prevent scroll overflows
-fig, axes = plt.subplots(2, 2, figsize=(11, 3.5))
-plt.rcParams.update({'font.size': 7, 'axes.labelsize': 7.5, 'axes.titlesize': 8})
+plt.rcParams.update({'font.size': 8, 'axes.labelsize': 8.5, 'axes.titlesize': 9.5})
 
-# Panel A: Feature Importance Plot
-feature_data = pd.DataFrame({
-    'Feature': ['Recency', 'Tx_Count', 'CreditScore', 'Total_Spend', 'Income', 'Age', 'Avg_Tx_Value', 'Has_Active_Loan'],
-    'Importance': [0.555690, 0.259590, 0.045125, 0.044271, 0.034610, 0.028467, 0.027646, 0.004600]
-}).sort_values(by='Importance', ascending=False)
-sns.barplot(x='Importance', y='Feature', data=feature_data, ax=axes[0, 0], palette='Blues_d', hue='Feature', legend=False)
-axes[0, 0].set_title("💡 Churn Predictive Feature Drivers", fontweight='bold', pad=2)
-axes[0, 0].set_xlabel(""); axes[0, 0].set_ylabel("")
+# Split the canvas into two robust master columns to avoid overlapping subplots
+col_left, col_right = st.columns(2)
 
-# Panel B: Loan Default Rates Plot
-df_loan_risk = pd.merge(df_loans, df_cust, on='CustomerID')
-def assign_credit_tier(score):
-    return 'Poor (<580)' if score < 580 else ('Fair (580-66)' if score < 670 else ('Good' if score < 740 else 'Excellent'))
-df_loan_risk['Credit_Tier'] = df_loan_risk['CreditScore'].apply(assign_credit_tier)
-tier_order = ['Poor (<580)', 'Fair (580-66)', 'Good', 'Excellent']
+with col_left:
+    # Panel A: Feature Importance Plot
+    fig_a, ax_a = plt.subplots(figsize=(6, 2.0))
+    feature_data = pd.DataFrame({
+        'Feature': ['Recency', 'Tx_Count', 'CreditScore', 'Total_Spend', 'Income', 'Age', 'Avg_Tx_Value', 'Has_Active_Loan'],
+        'Importance': [0.555690, 0.259590, 0.045125, 0.044271, 0.034610, 0.028467, 0.027646, 0.004600]
+    }).sort_values(by='Importance', ascending=False)
+    sns.barplot(x='Importance', y='Feature', data=feature_data, ax=ax_a, palette='Blues_d', hue='Feature', legend=False)
+    ax_a.set_title("💡 Churn Predictive Feature Drivers", fontweight='bold', pad=6)
+    ax_a.set_xlabel(""); ax_a.set_ylabel("")
+    plt.tight_layout(pad=0.2)
+    st.pyplot(fig_a, use_container_width=True)
+    plt.close(fig_a)
 
-loan_summary = df_loan_risk.groupby('Credit_Tier').agg(Total_Loans=('LoanID', 'count'), Defaults=('CurrentStatus', lambda x: (x == 'Defaulted').sum())).reindex(tier_order).fillna(0).reset_index()
-loan_summary['Default_Rate'] = (loan_summary['Defaults'] / loan_summary['Total_Loans']) * 100
+    # Panel C: Fraud Outlier Distribution
+    fig_c, ax_c = plt.subplots(figsize=(6, 2.0))
+    df_tx['Z_Score'] = (df_tx['Amount'] - mean_amt) / std_amt
+    df_tx['Status'] = np.where(df_tx['Z_Score'] > 3, 'Outlier', 'Normal')
+    sns.scatterplot(x=df_tx.index, y='Amount', hue='Status', data=df_tx, palette={'Normal': '#cccccc', 'Outlier' : '#cc0000'}, ax=ax_c, alpha=0.4, s=6, edgecolor=None)
+    ax_c.set_title("🚨 Transaction Auditing: Fraud Anomaly Plot", fontweight='bold', pad=6)
+    ax_c.set_xlabel(""); ax_c.set_ylabel(""); ax_c.get_legend().remove()
+    plt.tight_layout(pad=0.2)
+    st.pyplot(fig_c, use_container_width=True)
+    plt.close(fig_c)
 
-sns.barplot(x='Credit_Tier', y='Default_Rate', data=loan_summary, ax=axes[0, 1], palette='Oranges_r', hue='Credit_Tier', legend=False)
-axes[0, 1].set_title("📉 Asset Delinquency: Loan Default Rates", fontweight='bold', pad=2)
-axes[0, 1].set_xlabel(""); axes[0, 1].set_ylabel("")
-for p in axes[0, 1].patches:
-    axes[0, 1].annotate(f"{p.get_height():.1f}%", (p.get_x() + p.get_width() / 2., p.get_height() + 0.1), ha='center', va='center', xytext=(0, 2), textcoords='offset points', fontsize=6.5)
+with col_right:
+    # Panel B: Loan Default Rates Plot
+    fig_b, ax_b = plt.subplots(figsize=(6, 2.0))
+    df_loan_risk = pd.merge(df_loans, df_cust, on='CustomerID')
+    def assign_credit_tier(score):
+        return 'Poor (<580)' if score < 580 else ('Fair (580-66)' if score < 670 else ('Good' if score < 740 else 'Excellent'))
+    df_loan_risk['Credit_Tier'] = df_loan_risk['CreditScore'].apply(assign_credit_tier)
+    tier_order = ['Poor (<580)', 'Fair (580-66)', 'Good', 'Excellent']
 
-# Panel C: Fraud Outlier Distribution
-df_tx['Z_Score'] = (df_tx['Amount'] - mean_amt) / std_amt
-df_tx['Status'] = np.where(df_tx['Z_Score'] > 3, 'Outlier', 'Normal')
-sns.scatterplot(x=df_tx.index, y='Amount', hue='Status', data=df_tx, palette={'Normal': '#cccccc', 'Outlier' : '#cc0000'}, ax=axes[1, 0], alpha=0.4, s=5, edgecolor=None)
-axes[1, 0].set_title("🚨 Transaction Auditing: Fraud Anomaly Plot", fontweight='bold', pad=2)
-axes[1, 0].set_xlabel(""); axes[1, 0].set_ylabel(""); axes[1, 0].get_legend().remove()
+    loan_summary = df_loan_risk.groupby('Credit_Tier').agg(Total_Loans=('LoanID', 'count'), Defaults=('CurrentStatus', lambda x: (x == 'Defaulted').sum())).reindex(tier_order).fillna(0).reset_index()
+    loan_summary['Default_Rate'] = (loan_summary['Defaults'] / loan_summary['Total_Loans']) * 100
 
-# Panel D: Revenue Contribution Per Card Tier
-tier_spend = df_tx.merge(df_cust, on='CustomerID').groupby('AccountTier')['Amount'].sum().reset_index()
-axes[1, 1].pie(tier_spend['Amount'], labels=tier_spend['AccountTier'], autopct='%1.1f%%', startangle=140, colors=['#cfd8dc', '#ffd54f', '#90caf9'], textprops={'fontsize': 7})
-axes[1, 1].set_title("💎 Capital Contribution: Share per Card Tier", fontweight='bold', pad=2)
+    sns.barplot(x='Credit_Tier', y='Default_Rate', data=loan_summary, ax=ax_b, palette='Oranges_r', hue='Credit_Tier', legend=False)
+    ax_b.set_title("📉 Asset Delinquency: Loan Default Rates", fontweight='bold', pad=6)
+    ax_b.set_xlabel(""); ax_b.set_ylabel("")
+    for p in ax_b.patches:
+        ax_b.annotate(f"{p.get_height():.1f}%", (p.get_x() + p.get_width() / 2., p.get_height() + 0.3), ha='center', va='center', xytext=(0, 2), textcoords='offset points', fontsize=7.5)
+    plt.tight_layout(pad=0.2)
+    st.pyplot(fig_b, use_container_width=True)
+    plt.close(fig_b)
 
-plt.tight_layout(pad=0.2, w_pad=0.3, h_pad=0.3)
-st.pyplot(fig, use_container_width=True)
+    # Panel D: Revenue Contribution Per Card Tier
+    fig_d, ax_d = plt.subplots(figsize=(6, 2.0))
+    tier_spend = df_tx.merge(df_cust, on='CustomerID').groupby('AccountTier')['Amount'].sum().reset_index()
+    ax_d.pie(tier_spend['Amount'], labels=tier_spend['AccountTier'], autopct='%1.1f%%', startangle=140, colors=['#cfd8dc', '#ffd54f', '#90caf9'], textprops={'fontsize': 7.5})
+    ax_d.set_title("💎 Capital Contribution: Share per Card Tier", fontweight='bold', pad=6)
+    plt.tight_layout(pad=0.2)
+    st.pyplot(fig_d, use_container_width=True)
+    plt.close(fig_d)
+
 st.markdown("<hr/>", unsafe_allow_html=True)
 
 # =====================================================================
@@ -199,6 +212,7 @@ ax_sim.text(churn_probability + 1.0, 0, f"{churn_probability:.1f}%", va='center'
 sns.despine(left=True, bottom=True, right=True, top=True)
 plt.tight_layout(pad=0)
 st.pyplot(fig_sim, use_container_width=True)
+plt.close(fig_sim)
 
 # Small alert container block row entry
 alert_func(status_text)
