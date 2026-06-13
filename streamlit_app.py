@@ -106,20 +106,25 @@ with kpi4:
 st.markdown("---")
 
 # =====================================================================
-# 4. UNIFIED 4-PANEL PUBLICATION GRAPHICS GRID (Matplotlib & Seaborn)
+# 4. UNIFIED 4-PANEL LAPTOP OPTIMISED VISUAL MATRIX
 # =====================================================================
 st.subheader("📊 High-Resolution Executive Workspace Visual Matrix")
 
 sns.set_theme(style="whitegrid")
-fig, axes = plt.subplots(2, 2, figsize=(16, 10))
-plt.rcParams.update({'font.size': 10, 'axes.labelsize': 11, 'axes.titlesize': 12})
+# Scaled down to tight 14x7.5 bounds to safely avoid vertical dashboard clipping
+fig, axes = plt.subplots(2, 2, figsize=(14, 7.5))
+plt.rcParams.update({
+    'font.size': 9, 
+    'axes.labelsize': 10, 
+    'axes.titlesize': 11
+})
 
 # Panel A: Feature Importance Plot
 feature_data = pd.DataFrame({
     'Feature': ['Recency', 'Tx_Count', 'CreditScore', 'Total_Spend', 'Income', 'Age', 'Avg_Tx_Value', 'Has_Active_Loan'],
     'Importance': [0.555690, 0.259590, 0.045125, 0.044271, 0.034610, 0.028467, 0.027646, 0.004600]
-}).sort_values(by='Importance', ascending=True)
-sns.barplot(x='Importance', y='Feature', data=feature_data, ax=axes[0, 0], palette='Blues_d')
+}).sort_values(by='Importance', ascending=False)
+sns.barplot(x='Importance', y='Feature', data=feature_data, ax=axes[0, 0], palette='Blues_d', hue='Feature', legend=False)
 axes[0, 0].set_title("💡 Churn Predictive Feature Drivers")
 axes[0, 0].set_xlabel("Predictive Weight Value")
 axes[0, 0].set_ylabel("")
@@ -140,92 +145,33 @@ loan_summary = df_loan_risk.groupby('Credit_Tier').agg(
 ).reindex(tier_order).fillna(0).reset_index()
 loan_summary['Default_Rate'] = (loan_summary['Defaults'] / loan_summary['Total_Loans']) * 100
 
-sns.barplot(x='Credit_Tier', y='Default_Rate', data=loan_summary, ax=axes[0, 1], palette='Oranges_r')
+sns.barplot(x='Credit_Tier', y='Default_Rate', data=loan_summary, ax=axes[0, 1], palette='Oranges_r', hue='Credit_Tier', legend=False)
 axes[0, 1].set_title("📉 Asset Delinquency: Loan Default Rates")
 axes[0, 1].set_xlabel("Customer Credit Risk Group")
 axes[0, 1].set_ylabel("Default Rate (%)")
 for p in axes[0, 1].patches:
-    axes[0, 1].annotate(f"{p.get_height():.1f}%", (p.get_x() + p.get_width() / 2., p.get_height()),
-                        ha='center', va='center', xytext=(0, 5), textcoords='offset points')
+    axes[0, 1].annotate(f"{p.get_height():.1f}%", (p.get_x() + p.get_width() / 2., p.get_height() + 0.3),
+                        ha='center', va='center', xytext=(0, 5), textcoords='offset points', fontsize=9)
 
 # Panel C: Fraud Outlier Distribution
 df_tx['Z_Score'] = (df_tx['Amount'] - mean_amt) / std_amt
 df_tx['Status'] = np.where(df_tx['Z_Score'] > 3, 'Flagged Outlier (>3 SD)', 'Normal Core Process')
 sns.scatterplot(x=df_tx.index, y='Amount', hue='Status', data=df_tx,
                 palette={'Normal Core Process': '#cccccc', 'Flagged Outlier (>3 SD)' : '#cc0000'},
-                ax=axes[1, 0], alpha=0.7, edgecolor=None)
+                ax=axes[1, 0], alpha=0.5, s=15, edgecolor=None)
 axes[1, 0].set_title("🚨 Transaction Auditing: Fraud Anomaly Plot")
 axes[1, 0].set_xlabel("Sequential Transaction Reference ID")
 axes[1, 0].set_ylabel("Volume Magnitude ($)")
-axes[1, 0].legend(loc='upper right')
+axes[1, 0].legend(loc='upper right', fontsize=8)
 
 # Panel D: Revenue Contribution Per Card Tier
-df_tier_cap = df_cust.groupby('AccountTier')['Income'].sum().reset_index()
-axes[1, 1].pie(df_tier_cap['Income'], labels=df_tier_cap['AccountTier'], autopct='%1.1f%%',
-               startangle=140, colors=sns.color_palette("Blues_r", n_colors=3))
+tier_spend = df_tx.merge(df_cust, on='CustomerID').groupby('AccountTier')['Amount'].sum().reset_index()
+axes[1, 1].pie(tier_spend['Amount'], labels=tier_spend['AccountTier'], autopct='%1.1f%%',
+               startangle=140, colors=['#cfd8dc', '#ffd54f', '#90caf9'], textprops={'fontsize': 9})
 axes[1, 1].set_title("💎 Capital Contribution: Share per Card Tier")
 
-plt.tight_layout()
-st.pyplot(fig)
+plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+# KEY CHANGE: Explicitly force container boundary constraint overrides to downscale to layout widths
+st.pyplot(fig, use_container_width=True)
 st.markdown("---")
-# =====================================================================
-# 5. 🔮 REAL-TIME CUSTOMER CHURN RISK SIMULATOR ENGINE
-# =====================================================================
-st.subheader("🔮 Open Interactive Real-Time Customer Churn Risk Simulator")
-
-sim_input, sim_output = st.columns([1, 1.2])
-
-with sim_input:
-    st.markdown("**Adjust Customer Behavioral & Demographic Parameters:**")
-    credit_score = st.slider("Customer Credit Score Metric", min_value=300, max_value=850, value=710, step=10)
-    age = st.slider("Customer Age", min_value=18, max_value=80, value=35, step=1)
-    recency = st.slider("Days Since Last Transaction (Recency)", min_value=0, max_value=180, value=14, step=1)
-    tx_count = st.slider("Monthly Transaction Counts", min_value=0, max_value=100, value=38, step=1)
-    debt_status = st.selectbox(
-        "Active Account Debt Liability Status", 
-        ["No Active Loan", "Healthy Active Loan", "Delinquent / Default"]
-    )
-
-# Real-Time Mathematical Logic Model based on Feature Weight Matrix
-base_risk = 35.0
-base_risk -= (credit_score - 300) * 0.06   
-base_risk += recency * 0.42                
-base_risk -= tx_count * 0.32               
-if debt_status == "Delinquent / Default":
-    base_risk += 28.0                      
-elif debt_status == "Healthy Active Loan":
-    base_risk -= 4.0                       
-
-# Maintain boundary safety constraints [0% - 100%]
-churn_probability = max(0.0, min(100.0, base_risk))
-
-with sim_output:
-    st.markdown("**Calculated Live Risk Profile Matrix Output:**")
-    
-    fig_sim, ax_sim = plt.subplots(figsize=(6, 1.8))
-    
-    if churn_probability < 30.0:
-        bar_color = '#2ecc71'  
-        status_text = f"🟢 HEALTHY ACCOUNT FRAME: ACTIVE PROFILE ({churn_probability:.1f}%) — Standard background monitoring metrics hold safe."
-        alert_func = st.success
-    elif churn_probability < 70.0:
-        bar_color = '#f1c40f'  
-        status_text = f"🟡 ELEVATED RISK FRAME: WATCHLIST PROFILE ({churn_probability:.1f}%) — Initiate customer retention loops."
-        alert_func = st.warning
-    else:
-        bar_color = '#e74c3c'  
-        status_text = f"🔴 HIGH CHURN RISK: CRITICAL PROFILE ({churn_probability:.1f}%) — Trigger immediate outreach protocols."
-        alert_func = st.error
-
-    ax_sim.barh(["Churn Risk"], [churn_probability], color=bar_color, height=0.4, edgecolor='none')
-    ax_sim.set_xlim(0, 100)
-    ax_sim.set_xlabel("Probability Rate Metric (%)", fontsize=9)
-    ax_sim.tick_params(axis='both', which='major', labelsize=9)
-    
-    ax_sim.text(churn_probability + 2, 0, f"{churn_probability:.1f}%", va='center', ha='left', fontweight='bold', color='#333333', fontsize=11)
-    
-    sns.despine(left=True, bottom=False)
-    plt.tight_layout()
-    
-    st.pyplot(fig_sim)
-    alert_func(status_text)
