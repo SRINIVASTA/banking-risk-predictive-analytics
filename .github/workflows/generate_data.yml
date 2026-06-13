@@ -1,0 +1,33 @@
+name: Generate Banking Data Dynamic Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual click trigger
+
+jobs:
+  build-data:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Python Environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Pandas and Dependencies
+      run: pip install pandas numpy
+
+    - name: Execute Data Generation Script
+      run: python scripts/data_generator.py
+
+    - name: Commit and Push Generated Data Files
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@://github.com'
+        git add data/*.csv
+        git commit -m "chore: dynamically regenerate data profile CSV targets [skip ci]" || echo "No changes to commit"
+        git push
