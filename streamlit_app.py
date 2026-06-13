@@ -122,6 +122,7 @@ feature_data = pd.DataFrame({
     'Feature': ['Recency', 'Tx_Count', 'CreditScore', 'Total_Spend', 'Income', 'Age', 'Avg_Tx_Value', 'Has_Active_Loan'],
     'Importance': [0.555690, 0.259590, 0.045125, 0.044271, 0.034610, 0.028467, 0.027646, 0.004600]
 }).sort_values(by='Importance', ascending=False)
+# FIXED: Specified 2D array coordinates [0, 0] instead of the plain container reference
 sns.barplot(x='Importance', y='Feature', data=feature_data, ax=axes[0, 0], palette='Blues_d', hue='Feature', legend=False)
 axes[0, 0].set_title("💡 Churn Predictive Feature Drivers", fontweight='bold')
 axes[0, 0].set_xlabel("Predictive Weight Value")
@@ -143,17 +144,20 @@ loan_summary = df_loan_risk.groupby('Credit_Tier').agg(
 ).reindex(tier_order).fillna(0).reset_index()
 loan_summary['Default_Rate'] = (loan_summary['Defaults'] / loan_summary['Total_Loans']) * 100
 
+# FIXED: Specified 2D array coordinates [0, 1] instead of the plain container reference
 sns.barplot(x='Credit_Tier', y='Default_Rate', data=loan_summary, ax=axes[0, 1], palette='Oranges_r', hue='Credit_Tier', legend=False)
 axes[0, 1].set_title("📉 Asset Delinquency: Loan Default Rates", fontweight='bold')
 axes[0, 1].set_xlabel("")
 axes[0, 1].set_ylabel("Default Rate (%)")
-for p in axes.patches:
+# FIXED: Target the specific subplot patches array axes[0, 1].patches explicitly
+for p in axes[0, 1].patches:
     axes[0, 1].annotate(f"{p.get_height():.1f}%", (p.get_x() + p.get_width() / 2., p.get_height() + 0.3),
                         ha='center', va='center', xytext=(0, 3), textcoords='offset points', fontsize=8)
 
 # Panel C: Fraud Outlier Distribution
 df_tx['Z_Score'] = (df_tx['Amount'] - mean_amt) / std_amt
 df_tx['Status'] = np.where(df_tx['Z_Score'] > 3, 'Flagged Outlier (>3 SD)', 'Normal Core Process')
+# FIXED: Specified 2D array coordinates [1, 0] instead of the plain container reference
 sns.scatterplot(x=df_tx.index, y='Amount', hue='Status', data=df_tx,
                 palette={'Normal Core Process': '#cccccc', 'Flagged Outlier (>3 SD)' : '#cc0000'},
                 ax=axes[1, 0], alpha=0.5, s=10, edgecolor=None)
@@ -164,6 +168,7 @@ axes[1, 0].legend(loc='upper right', fontsize=7)
 
 # Panel D: Revenue Contribution Per Card Tier
 tier_spend = df_tx.merge(df_cust, on='CustomerID').groupby('AccountTier')['Amount'].sum().reset_index()
+# FIXED: Specified 2D array coordinates [1, 1] instead of the plain container reference
 axes[1, 1].pie(tier_spend['Amount'], labels=tier_spend['AccountTier'], autopct='%1.1f%%',
                startangle=140, colors=['#cfd8dc', '#ffd54f', '#90caf9'], textprops={'fontsize': 8})
 axes[1, 1].set_title("💎 Capital Contribution: Share per Card Tier", fontweight='bold')
@@ -174,7 +179,6 @@ st.markdown("---")
 # =====================================================================
 # 5. 🔮 SIDEBAR-NESTED CUSTOMER CHURN RISK SIMULATOR ENGINE
 # =====================================================================
-# KEY CHANGE: Mapping interactive controls directly to st.sidebar to sit cleanly on the side
 st.sidebar.header("🔮 Churn Risk Simulator Panel")
 st.sidebar.markdown("Modify customer metrics to predict risk scores instantly.")
 
@@ -199,7 +203,6 @@ elif debt_status == "Healthy Active Loan":
 
 churn_probability = max(0.0, min(100.0, base_risk))
 
-# Display Output results cleanly in the main body space right under the analytics cards matrix
 st.subheader("🔮 Live Simulator Optimization Output Matrix")
 st.markdown("The metrics below respond instantly to parameter shifts handled in the sidebar dashboard panel.")
 
