@@ -105,7 +105,8 @@ def generate_default_fallback_data():
 @st.cache_data(ttl=600)  
 def load_live_web_streams():
     """Dynamically streams active CSV data blocks from your external web hooks."""
-    # 🔴 NOTE: Replace placeholder domains below with your active repository or sheet URLs
+    
+    # 🌟 PASTE YOUR EXACT RAW GITHUB LINKS HERE TO CLEAR THE ERROR:
     cust_url = "https://githubusercontent.com"
     tx_url = "https://githubusercontent.com"
     loan_url = "https://githubusercontent.com"
