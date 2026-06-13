@@ -10,11 +10,12 @@ import os
 # 1. STREAMLIT GLOBAL VIEWPORT INITIALIZATION (Auto-Fit Layout Tuning)
 # =====================================================================
 st.set_page_config(
-    page_title="Banking Analytics Platform", 
+    page_title="CareerDream Banking Analytics Platform", 
     page_icon="🚀", 
     layout="wide"  
 )
 
+# Native theme spacing corrections pulling the entire container structure upward
 st.markdown("""
     <style>
         .block-container {padding-top: 0rem !important; padding-bottom: 0rem !important;}
@@ -25,23 +26,18 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🚀 Executive Banking Performance Analytics Platform")
+st.title("🚀 CareerDream.in — Executive Banking Performance Analytics Platform")
 
 # =====================================================================
 # INDIAN NUMBER SYSTEM CURRENCY FORMATTER FUNCTION
 # =====================================================================
 def format_indian_currency(number, include_symbol=True):
-    """
-    Formats a numeric value according to the Indian Numbering System.
-    Example: 12946200 -> ₹1,29,46,200 (1 Crore, 29 Lakhs, 46 Thousand, 200)
-    """
     s = str(int(number))
     if len(s) <= 3:
         formatted = s
     else:
         last_three = s[-3:]
         remaining = s[:-3]
-        # Group remaining digits by pairs of twos (Lakhs/Crores)
         groups = []
         while len(remaining) > 2:
             groups.insert(0, remaining[-2:])
@@ -53,77 +49,156 @@ def format_indian_currency(number, include_symbol=True):
     return f"₹{formatted}" if include_symbol else formatted
 
 # =====================================================================
-# 2. RELATIONAL DATA PROCESSING PIPELINE
+# OPTION A BACKEND: SYNTHETIC DATA GENERATOR FACTORY
 # =====================================================================
 @st.cache_data
-def verify_and_load_relational_database():
-    cust_path = 'data/customer_profiles.csv'
-    tx_path = 'data/transaction_history.csv'
-    loan_path = 'data/loan_records.csv'
+def generate_default_fallback_data():
+    """Generates baseline database structures at the new 1000-customer scale."""
+    np.random.seed(42)
+    NUM_CUSTOMERS, NUM_TRANSACTIONS, NUM_LOANS = 1000, 7500, 400
+
+    customer_ids = [f"CUST_{i:04d}" for i in range(1, NUM_CUSTOMERS + 1)]
+    df_cust = pd.DataFrame({
+        'CustomerID': customer_ids,
+        'Age': np.random.randint(18, 75, size=NUM_CUSTOMERS),
+        'Income': np.random.randint(20000, 160000, size=NUM_CUSTOMERS),
+        'CreditScore': np.random.randint(450, 850, size=NUM_CUSTOMERS),
+        'AccountTier': np.random.choice(['Silver', 'Gold', 'Platinum'], size=NUM_CUSTOMERS, p=[0.5, 0.3, 0.2])
+    })
+
+    tx_amounts = np.round(np.random.exponential(scale=80, size=NUM_TRANSACTIONS) + 2, 2)
+    fraud_indices = np.random.choice(range(NUM_TRANSACTIONS), size=int(NUM_TRANSACTIONS * 0.015), replace=False)
+    tx_amounts[fraud_indices] = np.round(np.random.uniform(3000, 12000, size=len(fraud_indices)), 2)
+    timestamps = [datetime(2026, 1, 1) + timedelta(days=int(np.random.randint(0, 160))) for _ in range(NUM_TRANSACTIONS)]
+
+    df_tx = pd.DataFrame({
+        'TransactionID': [f"TX_{i:06d}" for i in range(1, NUM_TRANSACTIONS + 1)],
+        'CustomerID': np.random.choice(customer_ids, size=NUM_TRANSACTIONS),
+        'Timestamp': pd.to_datetime(timestamps),
+        'Amount': tx_amounts,
+        'Category': np.random.choice(['Groceries', 'Utilities', 'Travel', 'Dining Out'], size=NUM_TRANSACTIONS),
+        'Channel': np.random.choice(['Mobile App', 'ATM', 'Branch'], size=NUM_TRANSACTIONS),
+        'IsFlaggedFraud': [1 if i in fraud_indices else 0 for i in range(NUM_TRANSACTIONS)]
+    })
+
+    loan_cust_ids = np.random.choice(customer_ids, size=NUM_LOANS, replace=False)
+    loan_status = []
+    for cid in loan_cust_ids:
+        score = df_cust.loc[df_cust['CustomerID'] == cid, 'CreditScore'].values
+        p_dist = [0.4, 0.3, 0.3] if score < 580 else ([0.7, 0.2, 0.1] if score < 670 else [0.95, 0.04, 0.01])
+        loan_status.append(np.random.choice(['Current', 'Late', 'Defaulted'], p=p_dist))
+
+    df_loans = pd.DataFrame({
+        'LoanID': [f"LN_{i:04d}" for i in range(1, NUM_LOANS + 1)],
+        'CustomerID': loan_cust_ids,
+        'LoanAmount': np.round(np.random.randint(5000, 60000, size=NUM_LOANS), -2),
+        'InterestRate': np.round(np.random.uniform(5.0, 18.0, size=NUM_LOANS), 2),
+        'TermMonths': np.random.choice([12, 24, 36, 48, 60], size=NUM_LOANS),
+        'CurrentStatus': loan_status
+    })
+    return df_cust, df_tx, df_loans
+
+# =====================================================================
+# OPTION B BACKEND: LIVE CLOUD WEB STREAM PIPELINE
+# =====================================================================
+@st.cache_data(ttl=600)  # Evicts and auto-refreshes data blocks every 10 minutes [1]
+def load_live_web_streams():
+    """Dynamically streams active CSV data blocks from your external web hooks."""
+    # Place your exact raw public web stream targets directly here [1]
+    cust_url = "https://google.com"
+    tx_url = "https://githubusercontent.com"
+    loan_url = "https://githubusercontent.com"
     
+    df_cust = pd.read_csv(cust_url)
+    df_tx = pd.read_csv(tx_url)
+    df_loans = pd.read_csv(loan_url)
+    df_tx['Timestamp'] = pd.to_datetime(df_tx['Timestamp'])
+    return df_cust, df_tx, df_loans
+# =====================================================================
+# 5. 🔮 SIDEBAR CONTROLS & DYNAMIC THREE-WAY DATA ROUTING MATRIX
+# =====================================================================
+st.sidebar.markdown("<h4 style='margin:0;'>🔮 Risk Simulator</h4>", unsafe_allow_html=True)
+
+credit_score = st.sidebar.slider("Credit Score", 300, 850, 710, 10)
+age = st.sidebar.slider("Age", 18, 80, 35, 1)
+recency = st.sidebar.slider("Recency (Days)", 0, 180, 14, 1)
+tx_count = st.sidebar.slider("Monthly Tx", 0, 100, 38, 1)
+debt_status = st.sidebar.selectbox("Debt Status", ["No Active Loan", "Healthy Active Loan", "Delinquent / Default"])
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("<h5 style='margin:0; color:#003366;'>📂 Operational Data Engine Sourcing</h5>", unsafe_allow_html=True)
+
+# THE THREE-WAY SWITCHER: Let user pick data execution track
+data_source = st.sidebar.radio(
+    "Select data engine input framework:",
+    ["Synthetic Baseline Generator", "Live Cloud Web Streams", "Local Batch CSV Upload"]
+)
+
+# Initialize variables to hold selected state data
+df_cust, df_tx, df_loans = None, None, None
+
+if data_source == "Synthetic Baseline Generator":
+    # Option 1: Trigger the in-memory fallback generator
+    df_cust, df_tx, df_loans = generate_default_fallback_data()
+    st.sidebar.success("🤖 Core: Synthetic baseline engines active.")
+
+elif data_source == "Live Cloud Web Streams":
+    # Option 2: Fetch data via URL web hooks [1]
     try:
-        df_cust = pd.read_csv(cust_path)
-        df_tx = pd.read_csv(tx_path)
-        df_loans = pd.read_csv(loan_path)
-        df_tx['Timestamp'] = pd.to_datetime(df_tx['Timestamp'])
-        return df_cust, df_tx, df_loans
-    except FileNotFoundError:
-        np.random.seed(42)
-        NUM_CUSTOMERS, NUM_TRANSACTIONS, NUM_LOANS = 1000, 7500, 400
+        df_cust, df_tx, df_loans = load_live_web_streams()
+        st.sidebar.success("⚡ Cloud: Web data streams synchronized!")
+    except Exception as e:
+        st.sidebar.error(f"❌ Web Stream Unreachable. Falling back to synthetic. Error: {e}")
+        df_cust, df_tx, df_loans = generate_default_fallback_data()
 
-        customer_ids = [f"CUST_{i:04d}" for i in range(1, NUM_CUSTOMERS + 1)]
-        df_cust = pd.DataFrame({
-            'CustomerID': customer_ids,
-            'Age': np.random.randint(18, 75, size=NUM_CUSTOMERS),
-            'Income': np.random.randint(20000, 160000, size=NUM_CUSTOMERS),
-            'CreditScore': np.random.randint(450, 850, size=NUM_CUSTOMERS),
-            'AccountTier': np.random.choice(['Silver', 'Gold', 'Platinum'], size=NUM_CUSTOMERS, p=[0.5, 0.3, 0.2])
-        })
+elif data_source == "Local Batch CSV Upload":
+    # Option 3: Expose drag and drop uploader files directly in sidebar look
+    st.sidebar.markdown("##### Upload Unified CSV Ledger Sheets:")
+    uploaded_cust = st.sidebar.file_uploader("Upload customer profiles CSV", type=["csv"], key="cust_up")
+    uploaded_tx = st.sidebar.file_uploader("Upload transaction history CSV", type=["csv"], key="tx_up")
+    uploaded_loans = st.sidebar.file_uploader("Upload loan records CSV", type=["csv"], key="loan_up")
+    
+    # Verify that all three files are dropped before executing swap
+    if uploaded_cust and uploaded_tx and uploaded_loans:
+        try:
+            df_cust = pd.read_csv(uploaded_cust)
+            df_tx = pd.read_csv(uploaded_tx)
+            df_loans = pd.read_csv(uploaded_loans)
+            df_tx['Timestamp'] = pd.to_datetime(df_tx['Timestamp'])
+            st.sidebar.success("📤 Success: Batch profiles active!")
+        except Exception as e:
+            st.sidebar.error("❌ Invalid CSV layout formatting structure.")
+            df_cust, df_tx, df_loans = generate_default_fallback_data()
+    else:
+        st.sidebar.info("📥 Waiting for all 3 relational database CSV files to be dropped...")
+        df_cust, df_tx, df_loans = generate_default_fallback_data()
 
-        tx_amounts = np.round(np.random.exponential(scale=80, size=NUM_TRANSACTIONS) + 2, 2)
-        fraud_indices = np.random.choice(range(NUM_TRANSACTIONS), size=int(NUM_TRANSACTIONS * 0.015), replace=False)
-        tx_amounts[fraud_indices] = np.round(np.random.uniform(3000, 12000, size=len(fraud_indices)), 2)
-        timestamps = [datetime(2026, 1, 1) + timedelta(days=int(np.random.randint(0, 160))) for _ in range(NUM_TRANSACTIONS)]
+# AUTOMATED TIER PROMOTION ALERTS
+st.sidebar.markdown("---")
+st.sidebar.markdown("<h5 style='margin:0; color:#003366;'>💎 Automated Business Promotion</h5>", unsafe_allow_html=True)
+is_qualified = (credit_score >= 650) and (debt_status == "No Active Loan") and (tx_count >= 15)
 
-        df_tx = pd.DataFrame({
-            'TransactionID': [f"TX_{i:06d}" for i in range(1, NUM_TRANSACTIONS + 1)],
-            'CustomerID': np.random.choice(customer_ids, size=NUM_TRANSACTIONS),
-            'Timestamp': pd.to_datetime(timestamps),
-            'Amount': tx_amounts,
-            'Category': np.random.choice(['Groceries', 'Utilities', 'Travel', 'Dining Out'], size=NUM_TRANSACTIONS),
-            'Channel': np.random.choice(['Mobile App', 'ATM', 'Branch'], size=NUM_TRANSACTIONS),
-            'IsFlaggedFraud': [1 if i in fraud_indices else 0 for i in range(NUM_TRANSACTIONS)]
-        })
-
-        loan_cust_ids = np.random.choice(customer_ids, size=NUM_LOANS, replace=False)
-        loan_status = []
-        for cid in loan_cust_ids:
-            score = df_cust.loc[df_cust['CustomerID'] == cid, 'CreditScore'].values
-            p_dist = [0.4, 0.3, 0.3] if score < 580 else ([0.7, 0.2, 0.1] if score < 670 else [0.95, 0.04, 0.01])
-            loan_status.append(np.random.choice(['Current', 'Late', 'Defaulted'], p=p_dist))
-
-        df_loans = pd.DataFrame({
-            'LoanID': [f"LN_{i:04d}" for i in range(1, NUM_LOANS + 1)],
-            'CustomerID': loan_cust_ids,
-            'LoanAmount': np.round(np.random.randint(5000, 60000, size=NUM_LOANS), -2),
-            'InterestRate': np.round(np.random.uniform(5.0, 18.0, size=NUM_LOANS), 2),
-            'TermMonths': np.random.choice([12, 24, 36, 48, 60], size=NUM_LOANS),
-            'CurrentStatus': loan_status
-        })
-        return df_cust, df_tx, df_loans
-
-df_cust, df_tx, df_loans = verify_and_load_relational_database()
+if is_qualified:
+    if credit_score >= 740:
+        recommended_promotion, credit_increase_limit, badge_func = "🚀 **Gold ➔ Platinum Premium Migration**", "₹2,00,000 Limit Increase", st.sidebar.success
+    elif credit_score >= 670:
+        recommended_promotion, credit_increase_limit, badge_func = "🌟 **Silver ➔ Gold Growth Promotion**", "₹1,00,000 Limit Increase", st.sidebar.info
+    else:
+        recommended_promotion, credit_increase_limit, badge_func = "📈 **Silver Retention Baseline Promotion**", "₹50,000 Limit Increase", st.sidebar.info
+    badge_func(f"{recommended_promotion}\n\n**Approved:** {credit_increase_limit}")
+else:
+    if debt_status == "Delinquent / Default" or credit_score < 580:
+        st.sidebar.error("🛑 **Promotion Blocked:** High default risk or active delinquency detected.")
+    else:
+        st.sidebar.warning("⚠️ **Not Eligible:** Requires Monthly Tx ≥ 15 and Credit Score ≥ 650 to qualify.")
 
 # =====================================================================
-# 3. EXECUTIVE MANAGEMENT METRIC HIGHLIGHTS (Indian Format Applied)
+# RENDER ALL DASHBOARD BLOCKS ACCORDING TO CURRENT DATA SOURCE STATE
 # =====================================================================
+# 3. EXECUTIVE MANAGEMENT METRIC HIGHLIGHTS
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-with kpi1: 
-    # Formats customer count with Indian comma structures
-    st.metric(label="Active Customers", value=format_indian_currency(len(df_cust), include_symbol=False))
-with kpi2: 
-    # Formats audited transaction count with Indian comma structures
-    st.metric(label="Audited Transactions", value=format_indian_currency(len(df_tx), include_symbol=False))
+with kpi1: st.metric(label="Active Customers", value=format_indian_currency(len(df_cust), include_symbol=False))
+with kpi2: st.metric(label="Audited Transactions", value=format_indian_currency(len(df_tx), include_symbol=False))
 with kpi3:
     mean_amt = df_tx['Amount'].mean()
     std_amt = df_tx['Amount'].std()
@@ -132,16 +207,13 @@ with kpi3:
     st.metric(label="Fraud Anomalies", value=format_indian_currency(anomalies_count, include_symbol=False), delta="Outliers >3 SD", delta_color="inverse")
 with kpi4:
     total_exposure = df_loans['LoanAmount'].sum()
-    # FIXED: Replaced standard dollar format with Rupee Symbol and Lakhs/Crores layout formatting logic
     st.metric(label="Capital Exposure", value=format_indian_currency(total_exposure))
 
 st.markdown("<hr/>", unsafe_allow_html=True)
-# =====================================================================
-# 4. UNIFIED GRID CONFIGURATION (Streamlit Column Based Isolation)
-# =====================================================================
+
+# 4. VISUAL PANELS GRID
 sns.set_theme(style="whitegrid")
 plt.rcParams.update({'font.size': 8, 'axes.labelsize': 8.5, 'axes.titlesize': 9.5})
-
 col_left, col_right = st.columns(2)
 
 with col_left:
@@ -174,10 +246,8 @@ with col_right:
         return 'Poor (<580)' if score < 580 else ('Fair (580-66)' if score < 670 else ('Good' if score < 740 else 'Excellent'))
     df_loan_risk['Credit_Tier'] = df_loan_risk['CreditScore'].apply(assign_credit_tier)
     tier_order = ['Poor (<580)', 'Fair (580-66)', 'Good', 'Excellent']
-
     loan_summary = df_loan_risk.groupby('Credit_Tier').agg(Total_Loans=('LoanID', 'count'), Defaults=('CurrentStatus', lambda x: (x == 'Defaulted').sum())).reindex(tier_order).fillna(0).reset_index()
     loan_summary['Default_Rate'] = (loan_summary['Defaults'] / loan_summary['Total_Loans']) * 100
-
     sns.barplot(x='Credit_Tier', y='Default_Rate', data=loan_summary, ax=ax_b, palette='Oranges_r', hue='Credit_Tier', legend=False)
     ax_b.set_title("📉 Asset Delinquency: Loan Default Rates", fontweight='bold', pad=4)
     ax_b.set_xlabel(""); ax_b.set_ylabel("")
@@ -197,46 +267,7 @@ with col_right:
 
 st.markdown("<hr/>", unsafe_allow_html=True)
 
-# =====================================================================
-# 5. 🔮 SIDEBAR-NESTED SIMULATOR CONTROLS WITH LIVE UP-SELL PROMOTIONS
-# =====================================================================
-st.sidebar.markdown("<h4 style='margin:0;'>🔮 Risk Simulator</h4>", unsafe_allow_html=True)
-
-credit_score = st.sidebar.slider("Credit Score", 300, 850, 710, 10)
-age = st.sidebar.slider("Age", 18, 80, 35, 1)
-recency = st.sidebar.slider("Recency (Days)", 0, 180, 14, 1)
-tx_count = st.sidebar.slider("Monthly Tx", 0, 100, 38, 1)
-debt_status = st.sidebar.selectbox("Debt Status", ["No Active Loan", "Healthy Active Loan", "Delinquent / Default"])
-
-# SIDEBAR TIER PROMOTION & AMOUNT INCREASING CALCULATOR
-st.sidebar.markdown("---")
-st.sidebar.markdown("<h5 style='margin:0; color:#003366;'>💎 Automated Business Promotion</h5>", unsafe_allow_html=True)
-
-is_qualified = (credit_score >= 650) and (debt_status == "No Active Loan") and (tx_count >= 15)
-
-if is_qualified:
-    if credit_score >= 740:
-        recommended_promotion = "🚀 **Gold ➔ Platinum Premium Migration**"
-        # FIXED: Converted pre-approved credit lines to Indian Rupee metrics
-        credit_increase_limit = "₹2,00,000 Limit Increase"
-        badge_func = st.sidebar.success
-    elif credit_score >= 670:
-        recommended_promotion = "🌟 **Silver ➔ Gold Growth Promotion**"
-        credit_increase_limit = "₹1,00,000 Limit Increase"
-        badge_func = st.sidebar.info
-    else:
-        recommended_promotion = "📈 **Silver Retention Baseline Promotion**"
-        credit_increase_limit = "₹50,000 Limit Increase"
-        badge_func = st.sidebar.info
-        
-    badge_func(f"{recommended_promotion}\n\n**Approved:** {credit_increase_limit}")
-else:
-    if debt_status == "Delinquent / Default" or credit_score < 580:
-        st.sidebar.error("🛑 **Promotion Blocked:** High default risk or active delinquency detected.")
-    else:
-        st.sidebar.warning("⚠️ **Not Eligible:** Requires Monthly Tx ≥ 15 and Credit Score ≥ 650 to qualify.")
-
-# Model Calculation Logic Loop
+# SIMULATOR RECONCILIATION LOGIC OUTPUT GAUGE
 base_risk = 35.0
 base_risk -= (credit_score - 300) * 0.06   
 base_risk += recency * 0.42                
@@ -245,8 +276,12 @@ if debt_status == "Delinquent / Default": base_risk += 28.0
 elif debt_status == "Healthy Active Loan": base_risk -= 4.0                       
 churn_probability = max(0.0, min(100.0, base_risk))
 
-# Real-Time Monitoring Tracker Line Row
+# =====================================================================
+# BLOCK 3: LIVE RISK TRACKER MONITOR & BATCH LEAD EXPORTER GENERATOR
+# =====================================================================
 st.markdown("<h4 style='color:#003366; margin:0;'>🔮 Live Churn Probability Tracker Monitor Output</h4>", unsafe_allow_html=True)
+
+# 1. Compile flat low-profile horizontal bar gauge
 fig_sim, ax_sim = plt.subplots(figsize=(10, 0.22))
 
 if churn_probability < 30.0:
@@ -258,39 +293,42 @@ else:
 
 ax_sim.barh(["Risk"], [churn_probability], color=bar_color, height=0.6, edgecolor='none')
 ax_sim.set_xlim(0, 100)
-ax_sim.xaxis.set_visible(False); ax_sim.yaxis.set_visible(False)
+ax_sim.xaxis.set_visible(False)
+ax_sim.yaxis.set_visible(False)
 ax_sim.text(churn_probability + 1.0, 0, f"{churn_probability:.1f}%", va='center', ha='left', fontweight='bold', color='#333333', fontsize=9)
 
 sns.despine(left=True, bottom=True, right=True, top=True)
 plt.tight_layout(pad=0)
+
+# Render tracking visual elements into responsive viewport layout grids
 st.pyplot(fig_sim, use_container_width=True)
 plt.close(fig_sim)
 alert_func(status_text)
 
-# =====================================================================
-# 6. 📞 BATCH EXPORTER ENGINE: ADJUSTED FOR HIGHER DENSITY IDENTIFICATION
-# =====================================================================
+# 2. 📞 HIGH-VALUE TARGET CALLING GENERATOR PIPELINE
 st.markdown("---")
 st.markdown("<h4 style='color:#003366;'>📞 Premium Up-Sell Cohort Batch Target Calling List Generator</h4>", unsafe_allow_html=True)
 st.markdown("Generates actionable lead records matching target criteria from the active database tables.")
 
+# Process behavioral parameter matrices from streaming files
 tx_summary = df_tx.groupby('CustomerID').agg(
-    Monthly_Transactions=('TransactionID', 'count'),
+    Monthly_Transactions=('TransactionID', 'count'), 
     Total_Spend_Volume=('Amount', 'sum')
 ).reset_index()
 
 df_leads = pd.merge(df_cust, tx_summary, on='CustomerID', how='inner')
 active_borrowers = df_loans['CustomerID'].unique()
 
+# Extract records based on relaxed density parameters to keep data populated
 df_high_value_targets = df_leads[
     (df_leads['CreditScore'] >= 650) & 
     (df_leads['Monthly_Transactions'] >= 15) & 
     (~df_leads['CustomerID'].isin(active_borrowers))
 ].copy()
 
+# Append Indian localized CRM processing variables
 np.random.seed(42)
 df_high_value_targets['Priority_Score'] = np.random.randint(85, 100, size=len(df_high_value_targets))
-# FIXED: Updated corporate target domain to an Indian localized address format mapping rules
 df_high_value_targets['Corporate_Email'] = df_high_value_targets['CustomerID'].str.lower() + "@careerdreambank.in"
 df_high_value_targets['Campaign_Status'] = "Ready to Call"
 
@@ -299,19 +337,20 @@ df_final_calling_sheet = df_high_value_targets[[
     'Monthly_Transactions', 'Corporate_Email', 'Priority_Score', 'Campaign_Status'
 ]].sort_values(by='Priority_Score', ascending=False)
 
+# Compile download actions row entry configurations
 call_col1, call_col2 = st.columns(2)
 with call_col1:
-    # Formats target system count with Indian comma structures
     formatted_lead_count = format_indian_currency(len(df_final_calling_sheet), include_symbol=False)
     st.markdown(f"🎯 **System Found:** `{formatted_lead_count}` Customer records matching the premium high-engagement, zero-debt profile criteria.")
 with call_col2:
     csv_bytes = df_final_calling_sheet.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="📥 Download Lead List (CSV)",
-        data=csv_bytes,
-        file_name=f"banking_upsell_call_list_{datetime.now().strftime('%Y%m%d')}.csv",
-        mime="text/csv",
+        label="📥 Download Lead List (CSV)", 
+        data=csv_bytes, 
+        file_name=f"banking_upsell_call_list_{datetime.now().strftime('%Y%m%d')}.csv", 
+        mime="text/csv", 
         use_container_width=True
     )
 
+# Render responsive interactive dataframe window sheet
 st.dataframe(df_final_calling_sheet, use_container_width=True, height=160)
