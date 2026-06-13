@@ -10,7 +10,7 @@ import os
 # 1. STREAMLIT GLOBAL VIEWPORT INITIALIZATION (Auto-Fit Layout Tuning)
 # =====================================================================
 st.set_page_config(
-    page_title="CareerDream Banking Analytics Platform", 
+    page_title="Banking Analytics Platform", 
     page_icon="🚀", 
     layout="wide"  
 )
@@ -25,7 +25,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🚀 CareerDream.in — Executive Banking Performance Analytics Platform")
+st.title("🚀 Executive Banking Performance Analytics Platform")
 
 # =====================================================================
 # INDIAN NUMBER SYSTEM CURRENCY FORMATTER FUNCTION
